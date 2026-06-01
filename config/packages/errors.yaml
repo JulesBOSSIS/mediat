@@ -1,0 +1,8 @@
+when@dev:
+    framework:
+        php_errors:
+            log: true
+
+framework:
+    php_errors:
+        log: true

@@ -1,0 +1,72 @@
+{% extends "base_error.html.twig" %}
+
+{% block title %}Une erreur s'est produite - {{ status_code }}{% endblock %}
+
+{% block body %}
+<style>
+    .error-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        text-align: center;
+        padding: 40px 20px;
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        color: #333;
+        border-radius: 10px;
+        margin: 40px 0;
+    }
+    .error-container h1 {
+        font-size: 120px;
+        font-weight: bold;
+        margin: 0;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    .error-container .error-title {
+        font-size: 32px;
+        font-weight: 600;
+        margin: 20px 0 10px 0;
+        color: #fff;
+    }
+    .error-container .error-description {
+        font-size: 16px;
+        max-width: 500px;
+        margin: 20px 0 30px 0;
+        color: rgba(255,255,255,0.95);
+        line-height: 1.6;
+    }
+    .error-container .error-icon {
+        font-size: 80px;
+        margin-bottom: 20px;
+    }
+    .error-container .btn {
+        display: inline-block;
+        padding: 12px 30px;
+        background-color: white;
+        color: #fa709a;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: 2px solid white;
+        margin-top: 10px;
+    }
+    .error-container .btn:hover {
+        background-color: transparent;
+        color: white;
+    }
+</style>
+
+<div class="error-container">
+    <div class="error-icon">⚠️</div>
+    <h1>{{ status_code }}</h1>
+    <p class="error-title">{% if status_code == 500 %}Erreur serveur{% elseif status_code == 502 %}Mauvaise passerelle{% elseif status_code == 503 %}Service indisponible{% else %}Une erreur s'est produite{% endif %}</p>
+    <p class="error-description">
+        {{ status_text }}<br>
+        <small>Code d'erreur: {{ status_code }}</small>
+    </p>
+    <a href="{{ path('app_accueil') }}" class="btn">Retour à l'accueil</a>
+</div>
+{% endblock %}

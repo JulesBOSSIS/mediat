@@ -1,0 +1,409 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    {% if query %}
+        Recherche : "{{ query }}" - MediaT
+    {% else %}
+        Recherche - MediaT
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ path('app_accueil') }}">
+                    <i class="bi bi-house-door me-1"></i>
+                    Accueil
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                <i class="bi bi-search me-1"></i>
+                Recherche
+            </li>
+        </ol>
+    </nav>
+    
+    <!-- Header de recherche -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm" data-tour="tour-search-panel">
+                <div class="card-body p-4">
+                    <h2 class="card-title mb-3">
+                        <i class="bi bi-search me-2"></i>
+                        Recherche dans la documentation
+                    </h2>
+                    
+                    <form method="GET" action="{{ path('app_search') }}">
+                        <div class="input-group input-group-lg">
+                            <input type="text" 
+                                   name="query" 
+                                   class="form-control" 
+                                   placeholder="Rechercher documentation, guides, outils..."
+                                   value="{{ query }}"
+                                   autofocus>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search me-1"></i>
+                                Rechercher
+                            </button>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="bi bi-lightbulb me-1"></i>
+                            Plusieurs mots : tous doivent être trouvés dans le titre ou le texte extrait du PDF (minimum 2 lettres par mot). La casse est ignorée.
+                        </small>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if query %}
+    <!-- Résultats de recherche -->
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">
+                    Résultats pour "{{ query }}"
+                    <span class="badge bg-secondary ms-2">{{ total }}</span>
+                </h4>
+                
+                {% if total > 0 %}
+                <div class="text-muted">
+                    {{ total }} résultat{{ total > 1 ? 's' : '' }} trouvé{{ total > 1 ? 's' : '' }}
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if results|length > 0 %}
+                <div class="row">
+                    {% for result in results %}
+                    <div class="col-12 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <!-- Titre et badges -->
+                                <h5 class="card-title mb-2">
+                                    <a href="{{ result.path }}" class="text-decoration-none">
+                                        {{ result.title }}
+                                    </a>
+                                </h5>
+                                <div class="mb-3">
+                                    {% if result.mimeTypeFormatted %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">
+                                        {{ result.mimeTypeFormatted }}
+                                    </span>
+                                    {% endif %}
+                                    <a href="{{ result.folderPath }}" class="badge bg-secondary bg-opacity-10 text-secondary text-decoration-none" style="cursor: pointer;">
+                                        {{ result.folder }}
+                                    </a>
+                                </div>
+                                {% if result.contentExcerpt is defined and result.contentExcerpt %}
+                                    <p class="small text-muted mb-3 border-start border-3 border-primary ps-2 py-1 bg-body-secondary bg-opacity-25 rounded-end">
+                                        <span class="text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.05em;">Extrait du document</span><br>
+                                        {{ result.contentExcerpt }}
+                                    </p>
+                                {% endif %}
+
+                                <!-- Actions (responsive) -->
+                                <div class="row g-2 g-lg-3 align-items-center">
+                                    <!-- Colonne gauche: Bouton Favoris et Accéder -->
+                                    <div class="col-12 col-sm-6 col-lg-auto d-flex gap-2">
+                                        <button class="btn btn-outline-warning favorite-btn d-flex align-items-center justify-content-center gap-1 flex-grow-1 flex-sm-grow-0"
+                                                data-document-id="{{ result.id }}"
+                                                data-is-favorite="{{ result.isFavorite ? 'true' : 'false' }}"
+                                                title="{{ result.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris' }}">
+                                            <i class="bi bi-star{% if result.isFavorite %}-fill{% endif %}"></i>
+                                            <span class="d-none d-sm-inline">Favoris</span>
+                                        </button>
+                                        <a href="{{ result.path }}" class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-1 flex-grow-1 flex-sm-grow-0">
+                                            <span class="d-none d-sm-inline">Accéder</span>
+                                            <i class="bi bi-arrow-right"></i>
+                                        </a>
+                                    </div>
+
+                                    <!-- Colonne droite: Widget note -->
+                                    <div class="col-12 col-lg-auto ms-lg-auto">
+                                        <div class="rating-widget" data-document-id="{{ result.id }}">
+                                            <div class="d-flex flex-column flex-sm-row align-items-start align-sm-center gap-2 gap-sm-3">
+                                                <div class="text-center w-100 w-sm-auto">
+                                                    <div class="small text-muted mb-1">Votre note</div>
+                                                    <div class="stars" style="cursor: pointer; font-size: 1rem;">
+                                                        {% for i in 1..5 %}
+                                                            <span class="star" data-score="{{ i }}" style="color: #ddd; cursor: pointer;">★</span>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                <div class="vr d-none d-sm-block"></div>
+                                                <div class="text-center w-100 w-sm-auto">
+                                                    <div class="small text-muted mb-1">Moyenne globale</div>
+                                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                                        <span class="avg-rating font-weight-bold" style="font-size: 1rem;">-</span>
+                                                        <span style="color: #ffc107; font-size: 0.85rem;">★</span>
+                                                        <span class="text-muted small">(<span class="total-ratings">0</span>)</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Aucun résultat -->
+                <div class="text-center py-5">
+                    <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3 text-muted">Aucun résultat trouvé</h4>
+                    <p class="text-muted">
+                        Aucun document ne correspond à votre recherche "{{ query }}".
+                    </p>
+                    <div class="mt-4">
+                        <h6>Suggestions :</h6>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-chevron-right text-muted me-2"></i>Vérifiez l'orthographe des mots-clés</li>
+                            <li><i class="bi bi-chevron-right text-muted me-2"></i>Utilisez des termes plus génériques</li>
+                            <li><i class="bi bi-chevron-right text-muted me-2"></i>Parcourez les catégories dans la sidebar</li>
+                        </ul>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% else %}
+    <!-- Suggestions de recherche -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-fire me-2"></i>
+                        Documents populaires
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if popularDocuments|length > 0 %}
+                    <div class="row">
+                        {% for document in popularDocuments %}
+                        <div class="col-12 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <!-- Titre et badges -->
+                                    <h5 class="card-title mb-2">
+                                        <a href="{{ document.path }}" class="text-decoration-none">
+                                            {{ document.title }}
+                                        </a>
+                                    </h5>
+                                    <div class="mb-3">
+                                        {% if document.mimeTypeFormatted %}
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">
+                                            {{ document.mimeTypeFormatted }}
+                                        </span>
+                                        {% endif %}
+                                        <a href="{{ document.folderPath }}" class="badge bg-secondary bg-opacity-10 text-secondary text-decoration-none" style="cursor: pointer;">
+                                            {{ document.folder }}
+                                        </a>
+                                    </div>
+                                    
+                                    <!-- Description -->
+                                    <p class="card-text text-muted mb-3">
+                                        {{ document.excerpt }}
+                                    </p>
+
+                                    <!-- Actions (responsive) -->
+                                    <div class="row g-2 g-lg-3 align-items-center">
+                                        <!-- Colonne gauche: Bouton Favoris et Accéder -->
+                                        <div class="col-12 col-sm-6 col-lg-auto d-flex gap-2">
+                                            <button class="btn btn-outline-warning favorite-btn d-flex align-items-center justify-content-center gap-1 flex-grow-1 flex-sm-grow-0"
+                                                    data-document-id="{{ document.id }}"
+                                                    data-is-favorite="{{ document.isFavorite ? 'true' : 'false' }}"
+                                                    title="{{ document.isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris' }}">
+                                                <i class="bi bi-star{% if document.isFavorite %}-fill{% endif %}"></i>
+                                                <span class="d-none d-sm-inline">Favoris</span>
+                                            </button>
+                                            <a href="{{ document.path }}" class="btn btn-outline-primary d-flex align-items-center justify-content-center gap-1 flex-grow-1 flex-sm-grow-0">
+                                                <span class="d-none d-sm-inline">Accéder</span>
+                                                <i class="bi bi-arrow-right"></i>
+                                            </a>
+                                        </div>
+
+                                        <!-- Colonne droite: Widget note -->
+                                        <div class="col-12 col-lg-auto ms-lg-auto">
+                                            <div class="rating-widget" data-document-id="{{ document.id }}">
+                                                <div class="d-flex flex-column flex-sm-row align-items-start align-sm-center gap-2 gap-sm-3">
+                                                    <div class="text-center w-100 w-sm-auto">
+                                                        <div class="small text-muted mb-1">Votre note</div>
+                                                        <div class="stars" style="cursor: pointer; font-size: 1rem;">
+                                                            {% for i in 1..5 %}
+                                                                <span class="star" data-score="{{ i }}" style="color: #ddd; cursor: pointer;">★</span>
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="vr d-none d-sm-block"></div>
+                                                    <div class="text-center w-100 w-sm-auto">
+                                                        <div class="small text-muted mb-1">Moyenne globale</div>
+                                                        <div class="d-flex align-items-center justify-content-center gap-1">
+                                                            <span class="avg-rating font-weight-bold" style="font-size: 1rem;">-</span>
+                                                            <span style="color: #ffc107; font-size: 0.85rem;">★</span>
+                                                            <span class="text-muted small">(<span class="total-ratings">0</span>)</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">Aucun document disponible</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .card:hover {
+        transform: translateY(-1px);
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .badge {
+        transition: all 0.2s ease;
+    }
+    
+    .badge:hover {
+        transform: scale(1.05);
+    }
+</style>
+
+<script>
+// Gérer les boutons favoris
+document.querySelectorAll('.favorite-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const docId = this.dataset.documentId;
+        const isFavorite = this.dataset.isFavorite === 'true';
+        
+        const url = isFavorite 
+            ? `/favorites/remove/${docId}`
+            : `/favorites/add/${docId}`;
+        
+        fetch(url, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                // Basculer l'état du bouton
+                const newState = !isFavorite;
+                this.dataset.isFavorite = newState.toString();
+                
+                // Mettre à jour l'apparence du bouton
+                if (newState) {
+                    this.classList.remove('btn-outline-warning');
+                    this.classList.add('btn-warning');
+                    this.innerHTML = '<i class="bi bi-star-fill"></i>';
+                    this.title = 'Retirer des favoris';
+                } else {
+                    this.classList.remove('btn-warning');
+                    this.classList.add('btn-outline-warning');
+                    this.innerHTML = '<i class="bi bi-star"></i>';
+                    this.title = 'Ajouter aux favoris';
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+    });
+});
+
+// Gérer les notations
+document.querySelectorAll('.rating-widget').forEach(widget => {
+    const docId = widget.dataset.documentId;
+    const starsContainer = widget.querySelector('.stars');
+    const stars = widget.querySelectorAll('.star');
+    const avgRating = widget.querySelector('.avg-rating');
+    const totalRatings = widget.querySelector('.total-ratings');
+    
+    // Charger les notes existantes
+    fetch(`/ratings/document/${docId}`)
+        .then(response => response.json())
+        .then(data => {
+            avgRating.textContent = data.average > 0 ? data.average.toFixed(1) : '-';
+            totalRatings.textContent = data.total;
+            
+            // Mettre à jour l'affichage des étoiles si l'utilisateur a déjà noté
+            if (data.userRating) {
+                updateStarDisplay(data.userRating);
+            }
+        });
+    
+    // Ajouter les écouteurs aux étoiles
+    stars.forEach(star => {
+        star.addEventListener('click', function(e) {
+            e.preventDefault();
+            const score = parseInt(this.dataset.score);
+            
+            const formData = new FormData();
+            formData.append('score', score);
+            
+            fetch(`/ratings/rate/${docId}`, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    avgRating.textContent = data.average > 0 ? data.average.toFixed(1) : '-';
+                    totalRatings.textContent = data.total;
+                    updateStarDisplay(score);
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+        });
+        
+        // Effets visuels au survol
+        star.addEventListener('mouseover', function() {
+            const score = parseInt(this.dataset.score);
+            stars.forEach(s => {
+                if (parseInt(s.dataset.score) <= score) {
+                    s.style.color = '#ffc107';
+                } else {
+                    s.style.color = '#ddd';
+                }
+            });
+        });
+    });
+    
+    starsContainer.addEventListener('mouseleave', function() {
+        // Recharger les notes pour restaurer l'affichage
+        fetch(`/ratings/document/${docId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.userRating) {
+                    updateStarDisplay(data.userRating);
+                } else {
+                    stars.forEach(s => s.style.color = '#ddd');
+                }
+            });
+    });
+    
+    function updateStarDisplay(score) {
+        stars.forEach(star => {
+            if (parseInt(star.dataset.score) <= score) {
+                star.style.color = '#ffc107';
+            } else {
+                star.style.color = '#ddd';
+            }
+        });
+    }
+});
+</script>
+
+{% endblock %}

@@ -1,0 +1,8 @@
+{# Liens retour et titres de page réutilisables #}
+{% macro back_bar(href, label) %}
+<div class="admin-toolbar d-flex flex-wrap align-items-center gap-2 mb-3">
+    <a href="{{ href }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left-short"></i> {{ label }}
+    </a>
+</div>
+{% endmacro %}

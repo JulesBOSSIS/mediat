@@ -1,0 +1,155 @@
+# CI sur chaque PR (main / develop) : pas de déploiement avant merge (normal).
+#
+# Déploiement SSH uniquement quand du code arrive sur main via push (merge inclus)
+# ou via « Run workflow » (workflow_dispatch) sur la branche main.
+#
+# Secrets GitHub (Settings → Secrets and variables → Actions → Secrets) :
+#   SSH_PRIVATE_KEY — OBLIGATOIRE : clé privée complète (BEGIN … PRIVATE KEY … END).
+#                      Nom exact du secret dans GitHub : SSH_PRIVATE_KEY (sinon il reste vide pour l'action).
+#   DEPLOY_HOST       — hôte SSH (IP ou FQDN)
+#   DEPLOY_USER       — utilisateur SSH
+#   DEPLOY_PATH       — chemin absolu du projet sur le serveur (ex. /var/www/mediat)
+# Port SSH (optionnel, défaut 22) : secret **DEPLOY_SSH_PORT** et/ou variable **DEPLOY_SSH_PORT**
+#   (le secret est pris en priorité si les deux existent).
+#
+# Prérequis serveur : PHP 8.2+, Composer, .env / .env.local avec APP_ENV=prod, DATABASE_URL, etc.
+# Le répertoire public/ sur le serveur n'est jamais synchronisé ni supprimé par ce workflow.
+# Si vous ajoutez des bundles avec assets, exécutez une fois sur le serveur :
+#   php bin/console assets:install public --env=prod
+# (les scripts Composer post-install sont désactivés en prod pour ne pas réécrire public/).
+
+name: CI and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Tests & validation
+    runs-on: ubuntu-latest
+    env:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      APP_SECRET: "00000000000000000000000000000000"
+      # Chemin absolu SQLite (4e slash) — requis par Doctrine pour les fichiers hors cwd.
+      DATABASE_URL: sqlite:////${{ github.workspace }}/var/ci.sqlite
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SQLite for CI
+        run: mkdir -p var && touch var/ci.sqlite
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: ctype, iconv, intl, pdo, pdo_mysql, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress
+
+      - name: Composer validate
+        run: composer validate --strict
+
+      - name: Symfony / YAML lint
+        run: php bin/console lint:yaml config --parse-tags
+
+      - name: Symfony / Twig lint
+        run: php bin/console lint:twig templates
+
+      - name: Symfony / Container lint
+        run: php bin/console lint:container --no-debug
+
+  deploy:
+    name: Déploiement SSH
+    needs: test
+    runs-on: ubuntu-latest
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    env:
+      # Secret d'abord (souvent utilisé), sinon variable Actions ; si vide → port 22 dans les scripts.
+      DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT != '' && secrets.DEPLOY_SSH_PORT || vars.DEPLOY_SSH_PORT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secrets de déploiement présents
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          err() { echo "::error::$*" >&2; exit 1; }
+          [ -n "$SSH_PRIVATE_KEY" ] || err "Secret **SSH_PRIVATE_KEY** manquant ou vide. GitHub → Settings → Secrets and variables → Actions → créer un secret nommé exactement SSH_PRIVATE_KEY avec le contenu de la clé privée."
+          [ -n "$DEPLOY_HOST" ] || err "Secret **DEPLOY_HOST** manquant."
+          [ -n "$DEPLOY_USER" ] || err "Secret **DEPLOY_USER** manquant."
+          [ -n "$DEPLOY_PATH" ] || err "Secret **DEPLOY_PATH** manquant."
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known_hosts
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          PORT="${DEPLOY_SSH_PORT:-22}"
+          ssh-keyscan -p "$PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Rsync application (sans public/)
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          PORT="${DEPLOY_SSH_PORT:-22}"
+          TARGET="${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/"
+          RSYNC_SSH=(ssh -p "$PORT")
+          rsync -avz -e "${RSYNC_SSH[*]}" --delete \
+            bin/ "${TARGET}bin/"
+          rsync -avz -e "${RSYNC_SSH[*]}" --delete \
+            config/ "${TARGET}config/"
+          rsync -avz -e "${RSYNC_SSH[*]}" --delete \
+            migrations/ "${TARGET}migrations/"
+          rsync -avz -e "${RSYNC_SSH[*]}" --delete \
+            src/ "${TARGET}src/"
+          rsync -avz -e "${RSYNC_SSH[*]}" --delete \
+            templates/ "${TARGET}templates/"
+          rsync -avz -e "${RSYNC_SSH[*]}" \
+            composer.json composer.lock \
+            "${TARGET}"
+
+      - name: Composer, migrations et cache sur le serveur
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          PORT="${DEPLOY_SSH_PORT:-22}"
+          ssh -p "$PORT" "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "set -euo pipefail; cd \"${DEPLOY_PATH}\"; \
+            composer install --no-dev --no-interaction --optimize-autoloader --no-scripts; \
+            n=\$(find migrations -maxdepth 1 -name 'Version*.php' -type f 2>/dev/null | wc -l); n=\$(echo \"\$n\" | tr -d ' '); \
+            if [ -z \"\$n\" ]; then n=0; fi; \
+            if [ \"\$n\" -eq 0 ]; then \
+              echo 'ERREUR: aucun fichier migrations/Version*.php après déploiement. Doctrine ne peut pas migrer.'; \
+              echo 'Corrigez le dépôt : ajoutez et commitez les classes de migration sous migrations/ (namespace DoctrineMigrations).'; \
+              exit 1; \
+            fi; \
+            php bin/console doctrine:migrations:migrate --no-interaction --env=prod; \
+            php bin/console cache:clear --env=prod --no-debug --no-ansi"

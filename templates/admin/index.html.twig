@@ -1,0 +1,152 @@
+{% extends 'admin/admin_base.html.twig' %}
+
+{% block title %}Panneau d'Administration - MediaT{% endblock %}
+
+{% block admin_toolbar %}
+<div class="admin-toolbar admin-toolbar--flush d-flex flex-wrap align-items-center gap-2">
+    <a href="{{ path('app_accueil') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-house-door me-1"></i>
+        Site public
+    </a>
+    <a href="{{ path('app_admin_guide') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-book me-1"></i>
+        Guide d'administration
+    </a>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<header class="mb-4 pb-2 border-bottom border-opacity-50">
+    <h1 class="admin-page-title mb-2">
+        <i class="bi bi-shield-lock text-primary me-2"></i>
+        Panneau d'administration
+    </h1>
+    <p class="admin-page-lead text-muted mb-0">
+        Accès rapides pour gérer les comptes, le contenu et la modération.
+    </p>
+</header>
+
+<div class="row g-3 mb-2">
+    <div class="col-12">
+        <p class="admin-section-label mb-0">Utilisateurs et modération</p>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card admin-card admin-dashboard-card h-100">
+            <div class="card-body d-flex flex-column">
+                <h2 class="card-title h6">
+                    <i class="bi bi-person-plus text-primary me-2"></i>
+                    Créer un utilisateur
+                </h2>
+                <p class="card-text text-muted flex-grow-1">Ajouter un compte et lui attribuer un rôle.</p>
+                <a href="{{ path('app_admin_create_user') }}" class="btn btn-primary btn-sm align-self-start">
+                    <i class="bi bi-plus-lg me-1"></i>
+                    Nouvel utilisateur
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card admin-card admin-dashboard-card h-100">
+            <div class="card-body d-flex flex-column">
+                <h2 class="card-title h6">
+                    <i class="bi bi-people text-primary me-2"></i>
+                    Liste des utilisateurs
+                </h2>
+                <p class="card-text text-muted flex-grow-1">Consulter, modifier ou supprimer des comptes.</p>
+                <a href="{{ path('app_admin_list_users') }}" class="btn btn-outline-primary btn-sm align-self-start">
+                    <i class="bi bi-list-check me-1"></i>
+                    Ouvrir la liste
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card admin-card admin-dashboard-card h-100">
+            <div class="card-body d-flex flex-column">
+                <h2 class="card-title h6">
+                    <i class="bi bi-chat-dots text-primary me-2"></i>
+                    Commentaires
+                </h2>
+                <p class="card-text text-muted flex-grow-1">Modérer les échanges sur les documents.</p>
+                <a href="{{ path('app_admin_list_comments') }}" class="btn btn-outline-primary btn-sm align-self-start">
+                    <i class="bi bi-chat-left-text me-1"></i>
+                    Modération
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-light border admin-card py-3 mb-4 small text-muted">
+    <span class="fw-semibold text-body">Rôles :</span>
+    Utilisateur (accès standard),
+    Partenaire (accès élargi aux contenus),
+    Administrateur (gestion complète).
+</div>
+
+<div class="row g-3">
+    <div class="col-12">
+        <p class="admin-section-label mb-0">Contenu</p>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card admin-card admin-dashboard-card h-100">
+            <div class="card-body d-flex flex-column">
+                <h2 class="card-title h6">
+                    <i class="bi bi-folder-plus text-primary me-2"></i>
+                    Nouveau dossier
+                </h2>
+                <p class="card-text text-muted flex-grow-1">Créer un dossier racine ou préparer une arborescence.</p>
+                <a href="{{ path('app_admin_create_folder') }}" class="btn btn-primary btn-sm align-self-start">
+                    <i class="bi bi-plus-lg me-1"></i>
+                    Créer un dossier
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card admin-card admin-dashboard-card h-100">
+            <div class="card-body d-flex flex-column">
+                <h2 class="card-title h6">
+                    <i class="bi bi-folder2-open text-primary me-2"></i>
+                    Arborescence
+                </h2>
+                <p class="card-text text-muted flex-grow-1">Voir, éditer ou supprimer des dossiers.</p>
+                <a href="{{ path('app_admin_list_folders') }}" class="btn btn-outline-primary btn-sm align-self-start">
+                    <i class="bi bi-diagram-3 me-1"></i>
+                    Gérer les dossiers
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card admin-card admin-dashboard-card h-100">
+            <div class="card-body d-flex flex-column">
+                <h2 class="card-title h6">
+                    <i class="bi bi-file-earmark-plus text-primary me-2"></i>
+                    Nouveau document
+                </h2>
+                <p class="card-text text-muted flex-grow-1">Ajouter un fichier ou un lien externe.</p>
+                <a href="{{ path('app_admin_create_document') }}" class="btn btn-primary btn-sm align-self-start">
+                    <i class="bi bi-plus-lg me-1"></i>
+                    Ajouter
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <div class="card admin-card admin-dashboard-card h-100">
+            <div class="card-body d-flex flex-column">
+                <h2 class="card-title h6">
+                    <i class="bi bi-files text-primary me-2"></i>
+                    Documents
+                </h2>
+                <p class="card-text text-muted flex-grow-1">Liste, ordre et statistiques de consultation.</p>
+                <a href="{{ path('app_admin_list_documents') }}" class="btn btn-outline-primary btn-sm align-self-start">
+                    <i class="bi bi-list-ul me-1"></i>
+                    Liste et stats
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

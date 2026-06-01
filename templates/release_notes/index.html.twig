@@ -1,0 +1,75 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Notes de version — MediaT{% endblock %}
+
+{% block body %}
+<div class="mx-auto" style="max-width: 40rem;">
+    <h1 class="h4 mb-3 text-secondary fw-semibold">Notes de version</h1>
+
+    <article class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+            <div class="mb-4">
+                <label for="releaseNotesSelect" class="form-label small text-muted mb-1">Voir une version</label>
+                <select id="releaseNotesSelect"
+                        class="form-select form-select-sm"
+                        aria-label="Choisir une version à afficher">
+                    {% for release in releases %}
+                        <option value="{{ release.version }}"{% if release.version == currentVersion %} selected{% endif %}>
+                            {{ release.version }}
+                            ({{ release.releasedAt|date('d/m/Y') }})
+                            {%- if release.version == currentVersion %} — actuelle{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="release-notes-panels">
+                {% for release in releases %}
+                    <div class="release-notes-panel{% if release.version != currentVersion %} d-none{% endif %}"
+                         data-release-version="{{ release.version }}"
+                         role="region"
+                         aria-label="Notes pour la version {{ release.version }}">
+                        <header class="mb-3 pb-3 border-bottom">
+                            <div class="d-flex align-items-baseline flex-wrap gap-2">
+                                <span class="badge rounded-pill text-bg-primary fs-6 fw-semibold">{{ release.version }}</span>
+                                <span class="text-muted small">MediaT</span>
+                            </div>
+                            <p class="small text-muted mb-0 mt-2">
+                                <time datetime="{{ release.releasedAt|date('Y-m-d') }}">
+                                    Publiée le {{ release.releasedAt|format_datetime(pattern='EEEE dd/MM/yyyy', locale='fr') }}
+                                </time>
+                            </p>
+                        </header>
+                        <ul class="mb-0 ps-3 lh-lg text-body-secondary">
+                            {% for item in release.items %}
+                                <li class="{% if not loop.last %}mb-2{% endif %}">{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </article>
+
+    <p class="small text-muted mt-3 mb-0">
+        <a href="{{ path('app_accueil') }}" class="text-decoration-none">← Retour à l'accueil</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var select = document.getElementById('releaseNotesSelect');
+            if (!select) return;
+            select.addEventListener('change', function () {
+                var v = this.value;
+                document.querySelectorAll('.release-notes-panel').forEach(function (panel) {
+                    var match = panel.getAttribute('data-release-version') === v;
+                    panel.classList.toggle('d-none', !match);
+                });
+            });
+        });
+    </script>
+{% endblock %}

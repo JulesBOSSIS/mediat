@@ -1,0 +1,543 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ folder.name }} - MediaT{% endblock %}
+
+{% block body %}
+<div class="container-fluid mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ path('app_accueil') }}">
+                    <i class="bi bi-house-door me-1"></i>
+                    Accueil
+                </a>
+            </li>
+            
+            {# Afficher les ancêtres #}
+            {% for ancestor in ancestors %}
+                <li class="breadcrumb-item">
+                    <a href="{{ path('app_folder_view', {'id': ancestor.id}) }}">
+                        {{ ancestor.name }}
+                    </a>
+                </li>
+            {% endfor %}
+            
+            {# Afficher le dossier courant #}
+            <li class="breadcrumb-item active" aria-current="page">
+                {{ folder.name }}
+            </li>
+        </ol>
+    </nav>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <!-- En-tête du dossier -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                        <div class="flex-grow-1">
+                            <h1 class="mb-2">
+                                <i class="bi bi-folder-fill me-2 text-primary"></i>
+                                {{ folder.name }}
+                            </h1>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-file-text me-1"></i>
+                                {{ documents|length }} document{{ documents|length != 1 ? 's' : '' }}
+                                <span class="mx-2">·</span>
+                                <i class="bi bi-folder2 me-1"></i>
+                                {{ children|length }} sous-dossier{{ children|length != 1 ? 's' : '' }}
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2 align-items-start">
+                            <a href="{{ path('app_accueil') }}" class="btn btn-outline-secondary d-flex align-items-center">
+                                <i class="bi bi-house me-1"></i>
+                                Accueil
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section téléchargement ZIP -->
+            {% set pdfDocuments = documents|filter(d => d.isPdf()) %}
+            {% if pdfDocuments|length > 0 %}
+                <div class="card border-0 shadow-sm mb-4" id="downloadSection" style="display: none;">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div class="d-flex align-items-center gap-3 flex-grow-1">
+                                <button id="downloadPdfsBtn" class="btn btn-success d-flex align-items-center">
+                                    <i class="bi bi-download me-2"></i>
+                                    Télécharger <span id="selectedCount" class="fw-bold ms-1 me-1">0</span><span id="selectedText">PDF sélectionné</span>
+                                </button>
+                                <div class="text-muted small d-flex align-items-center">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Les fichiers seront téléchargés dans un ZIP
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Message d'aide initial -->
+                <div class="alert alert-primary border-0 shadow-sm mb-4" id="downloadInfo" style="background: linear-gradient(135deg, #e7f3ff 0%, #d0e7ff 100%); border-left: 4px solid #0d6efd !important;">
+                    <div class="d-flex align-items-start">
+                        <i class="bi bi-download me-3 mt-1" style="font-size: 1.5rem; color: #0d6efd;"></i>
+                        <div class="flex-grow-1">
+                            <strong class="d-block mb-2" style="font-size: 1.1rem; color: #0d6efd;">Téléchargement multiple</strong>
+                            <p class="mb-0">Sélectionnez plusieurs PDFs en cochant les cases ci-dessous, puis cliquez sur le bouton de téléchargement pour les obtenir dans un fichier ZIP.</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sous-dossiers (à réfléchir) -->
+    {% if children|length > 0 %}
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="h4 mb-3">
+                    <i class="bi bi-folder2-open me-2"></i>
+                    Sous-dossiers ({{ children|length }})
+                </h2>
+                <div class="row">
+                    {% set tutorielSousDossierCible = children|length >= 2 ? 2 : 1 %}
+                    {% for child in children %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <a href="{{ path('app_folder_view', {'id': child.id}) }}" class="card h-100 text-decoration-none text-dark shadow-sm folder-card"{% if loop.index == tutorielSousDossierCible %} data-tour="tour-folder-target-subfolder"{% endif %}>
+                                <div class="card-body d-flex align-items-center">
+                                    <i class="bi bi-folder-fill me-3" style="font-size: 2rem; color: #0d6efd;"></i>
+                                    <div class="flex-grow-1">
+                                        <h5 class="card-title mb-1">{{ child.name }}</h5>
+                                        <small class="text-muted">
+                                            {{ child.countTotalDocuments() }} document{{ child.countTotalDocuments() != 1 ? 's' : '' }}
+                                        </small>
+                                    </div>
+                                    <i class="bi bi-chevron-right ms-2 text-muted"></i>
+                                </div>
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-5">
+    {% endif %}
+
+    <!-- Documents -->
+    {% if documents|length > 0 %}
+        <div class="row">
+            <div class="col-12">
+                <h2 class="h4 mb-3">
+                    <i class="bi bi-file-text me-2"></i>
+                    Guides utilisateur ({{ documents|length }})
+                </h2>
+
+                <!-- Fichiers -->
+                {% set fileDocuments = documents|filter(d => d.documentType == 'file') %}
+                {% if fileDocuments|length > 0 %}
+                    <div class="mb-5">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-secondary mb-0">Fichiers</h5>
+                            {% set pdfFiles = fileDocuments|filter(d => d.isPdf()) %}
+                            {% if pdfFiles|length > 0 %}
+                                <div class="select-all-wrapper p-3 rounded position-relative" style="background-color: #f8f9fa; border: 2px dashed #dee2e6; cursor: pointer; user-select: none;">
+                                    <input class="form-check-input select-all-pdfs position-absolute" type="checkbox" id="selectAllPdfs" style="opacity: 0; position: absolute; width: 0; height: 0;">
+                                    <div class="d-flex align-items-center">
+                                        <div class="select-all-checkbox-visual me-3 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; border: 2px solid #0d6efd; border-radius: 4px; background-color: white; flex-shrink: 0;">
+                                            <i class="bi bi-check-lg text-white" style="font-size: 1rem; display: none;"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <i class="bi bi-check2-square me-2 text-primary"></i>
+                                            <span class="fw-semibold text-primary">Tout sélectionner ({{ pdfFiles|length }} PDF{{ pdfFiles|length > 1 ? 's' : '' }})</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="row">
+                            {% for document in fileDocuments %}
+                                <div class="col-md-6 col-lg-4 mb-3"{% if loop.first %} data-tour="tour-folder-first-document"{% endif %}>
+                                    <div class="card h-100 text-decoration-none text-dark shadow-sm document-card {% if document.isPdf() %}pdf-card{% endif %}">
+                                        <div class="card-body">
+                                            <!-- Case à cocher pour les PDFs -->
+                                            {% if document.isPdf() %}
+                                                <div class="pdf-select-wrapper mb-3 p-3 rounded position-relative" style="background-color: #f8f9fa; border: 2px dashed #dee2e6; cursor: pointer; user-select: none;" data-document-id="{{ document.id }}">
+                                                    <input class="form-check-input pdf-checkbox position-absolute" type="checkbox" data-document-id="{{ document.id }}" id="pdf-{{ document.id }}" style="opacity: 0; position: absolute; width: 0; height: 0;">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="pdf-checkbox-visual me-3 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; border: 2px solid #0d6efd; border-radius: 4px; background-color: white; flex-shrink: 0;">
+                                                            <i class="bi bi-check-lg text-white" style="font-size: 1rem; display: none;"></i>
+                                                        </div>
+                                                        <div class="flex-grow-1">
+                                                            <i class="bi bi-download me-2 text-primary"></i>
+                                                            <span class="fw-semibold text-primary">Télécharger ce PDF</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            <a href="{{ path('app_document_view', {'id': document.id}) }}" class="text-decoration-none text-dark">
+                                                <div class="d-flex align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            {% if document.isPdf() %}
+                                                                <i class="bi bi-file-pdf me-2" style="font-size: 1.5rem; color: #dc3545;"></i>
+                                                            {% else %}
+                                                                <i class="bi bi-file-earmark me-2" style="font-size: 1.5rem; color: #0d6efd;"></i>
+                                                            {% endif %}
+                                                            <h6 class="card-title mb-0">{{ document.title }}</h6>
+                                                        </div>
+                                                        <small class="text-muted d-block">
+                                                            {% if document.mimeType == 'application/pdf' %}
+                                                                PDF
+                                                            {% elseif document.mimeType starts with 'image/' %}
+                                                                Image
+                                                            {% else %}
+                                                                Fichier
+                                                            {% endif %}
+                                                        </small>
+                                                    </div>
+                                                    <i class="bi bi-chevron-right ms-2 text-muted" style="font-size: 1.2rem;"></i>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Didacticiels (Vidéos) -->
+                {% set videosDocuments = documents|filter(d => d.externalVideoUrl) %}
+                {% if videosDocuments|length > 0 %}
+                    <div class="row mb-5">
+                        <div class="col-12">
+                            <h2 class="h4 mb-3">
+                                <i class="bi bi-play-circle me-2"></i>
+                                Didacticiels ({{ videosDocuments|length }})
+                            </h2>
+                            <div class="row">
+                                {% for document in videosDocuments %}
+                                    <div class="col-md-6 col-lg-4 mb-3">
+                                        <a href="{{ path('app_document_view', {'id': document.id}) }}#didacticiel-section" class="card h-100 text-decoration-none text-dark shadow-sm document-card">
+                                            <div class="card-body">
+                                                <div class="d-flex align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            <i class="bi bi-play-circle me-2" style="font-size: 1.5rem; color: #198754;"></i>
+                                                            <h6 class="card-title mb-0">{{ document.title }}</h6>
+                                                        </div>
+                                                        <small class="text-muted d-block">Didacticiel vidéo</small>
+                                                    </div>
+                                                    <i class="bi bi-chevron-right ms-2 text-muted" style="font-size: 1.2rem;"></i>
+                                                </div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-5">
+                {% endif %}
+
+                <!-- Liens externes -->
+                {% set linkDocuments = documents|filter(d => d.documentType == 'link') %}
+                {% if linkDocuments|length > 0 %}
+                    <div class="mb-5">
+                        <h5 class="text-secondary mb-3">Liens externes</h5>
+                        <div class="row">
+                            {% for document in linkDocuments %}
+                                <div class="col-md-6 col-lg-4 mb-3">
+                                    <a href="{{ document.path }}" target="_blank" rel="noopener noreferrer" class="card h-100 text-decoration-none text-dark shadow-sm document-card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center mb-2">
+                                                        <i class="bi bi-link-45deg me-2" style="font-size: 1.5rem; color: #6c757d;"></i>
+                                                        <h6 class="card-title mb-0">{{ document.title }}</h6>
+                                                    </div>
+                                                    <small class="text-muted d-block">Lien externe</small>
+                                                </div>
+                                                <i class="bi bi-box-arrow-up-right ms-2 text-muted" style="font-size: 1rem;"></i>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Ce dossier ne contient aucun document pour le moment.
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .folder-card, .document-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        border: 1px solid #e0e0e0;
+    }
+
+    .folder-card:hover, .document-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+        border-color: #0d6efd;
+    }
+    
+    .pdf-card {
+        position: relative;
+    }
+    
+    .pdf-select-wrapper, .select-all-wrapper {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .pdf-select-wrapper:hover, .select-all-wrapper:hover {
+        background-color: #e7f3ff !important;
+        border-color: #0d6efd !important;
+        transform: translateY(-1px);
+    }
+    
+    .pdf-select-wrapper.selected, .select-all-wrapper.selected {
+        background-color: #d4edda !important;
+        border-color: #28a745 !important;
+        border-style: solid !important;
+    }
+    
+    .pdf-select-wrapper.selected .pdf-checkbox-visual,
+    .select-all-wrapper.selected .select-all-checkbox-visual {
+        background-color: #28a745 !important;
+        border-color: #28a745 !important;
+    }
+    
+    .pdf-select-wrapper.selected .pdf-checkbox-visual i,
+    .select-all-wrapper.selected .select-all-checkbox-visual i {
+        display: block !important;
+    }
+    
+    .pdf-select-wrapper.selected .text-primary,
+    .select-all-wrapper.selected .text-primary {
+        color: #198754 !important;
+    }
+    
+    .pdf-checkbox-visual, .select-all-checkbox-visual {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .breadcrumb a {
+        text-decoration: none;
+        color: #0d6efd;
+    }
+
+    .breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    #downloadSection {
+        transition: all 0.3s ease-in-out;
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border-left: 4px solid #28a745 !important;
+    }
+    
+    #downloadInfo {
+        transition: opacity 0.3s ease-in-out;
+    }
+    
+    #downloadInfo.hidden {
+        display: none !important;
+    }
+    
+    #downloadPdfsBtn {
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        transition: all 0.2s ease-in-out;
+    }
+    
+    #downloadPdfsBtn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    }
+</style>
+
+<script>
+// Gérer la sélection des PDFs
+const pdfCheckboxes = document.querySelectorAll('.pdf-checkbox');
+const selectAllCheckbox = document.querySelector('.select-all-pdfs');
+const downloadBtn = document.getElementById('downloadPdfsBtn');
+const selectedCountSpan = document.getElementById('selectedCount');
+const selectedTextSpan = document.getElementById('selectedText');
+const downloadSection = document.getElementById('downloadSection');
+const downloadInfo = document.getElementById('downloadInfo');
+
+// Fonction pour mettre à jour l'état visuel d'une checkbox
+function updateCheckboxVisual(checkbox) {
+    const wrapper = checkbox.closest('.pdf-select-wrapper');
+    if (wrapper) {
+        if (checkbox.checked) {
+            wrapper.classList.add('selected');
+        } else {
+            wrapper.classList.remove('selected');
+        }
+    }
+}
+
+// Fonction pour mettre à jour l'état visuel du bouton "Tout sélectionner"
+function updateSelectAllVisual(checkbox) {
+    const wrapper = checkbox.closest('.select-all-wrapper');
+    if (wrapper) {
+        if (checkbox.checked) {
+            wrapper.classList.add('selected');
+        } else {
+            wrapper.classList.remove('selected');
+        }
+    }
+}
+
+function updateDownloadButton() {
+    const checkedCount = document.querySelectorAll('.pdf-checkbox:checked').length;
+    selectedCountSpan.textContent = checkedCount;
+    
+    // Mettre à jour le texte selon le nombre
+    if (selectedTextSpan) {
+        if (checkedCount === 0) {
+            selectedTextSpan.textContent = 'PDF sélectionné';
+        } else if (checkedCount === 1) {
+            selectedTextSpan.textContent = 'PDF sélectionné';
+        } else {
+            selectedTextSpan.textContent = 'PDFs sélectionnés';
+        }
+    }
+    
+    if (checkedCount > 0) {
+        if (downloadSection) {
+            downloadSection.style.display = 'block';
+        }
+        if (downloadInfo) {
+            downloadInfo.classList.add('hidden');
+        }
+    } else {
+        if (downloadSection) {
+            downloadSection.style.display = 'none';
+        }
+        if (downloadInfo) {
+            downloadInfo.classList.remove('hidden');
+        }
+    }
+}
+
+// Gérer le bouton "Tout sélectionner"
+if (selectAllCheckbox) {
+    // Initialiser l'état visuel
+    updateSelectAllVisual(selectAllCheckbox);
+    
+    selectAllCheckbox.addEventListener('change', function() {
+        updateSelectAllVisual(this);
+        pdfCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+            updateCheckboxVisual(checkbox);
+        });
+        updateDownloadButton();
+    });
+    
+    // Rendre la zone de sélection entière cliquable
+    const selectAllWrapper = selectAllCheckbox.closest('.select-all-wrapper');
+    if (selectAllWrapper) {
+        selectAllWrapper.addEventListener('click', function(e) {
+            e.stopPropagation();
+            
+            // Basculer l'état de la checkbox
+            selectAllCheckbox.checked = !selectAllCheckbox.checked;
+            selectAllCheckbox.dispatchEvent(new Event('change'));
+        });
+    }
+}
+
+// Gérer chaque case à cocher
+pdfCheckboxes.forEach(checkbox => {
+    // Initialiser l'état visuel
+    updateCheckboxVisual(checkbox);
+    
+    checkbox.addEventListener('change', function() {
+        updateCheckboxVisual(checkbox);
+        updateDownloadButton();
+        
+        // Mettre à jour l'état du bouton "Tout sélectionner"
+        if (selectAllCheckbox) {
+            const allChecked = Array.from(pdfCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(pdfCheckboxes).some(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
+            updateSelectAllVisual(selectAllCheckbox);
+        }
+    });
+    
+    // Rendre la zone de sélection entière cliquable
+    const wrapper = checkbox.closest('.pdf-select-wrapper');
+    if (wrapper) {
+        wrapper.addEventListener('click', function(e) {
+            // Empêcher la propagation vers le lien du document
+            e.stopPropagation();
+            
+            // Ne pas déclencher si on clique directement sur le lien
+            if (e.target.closest('a')) {
+                return;
+            }
+            
+            // Basculer l'état de la checkbox
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        });
+    }
+});
+
+// Gérer le téléchargement des PDFs sélectionnés
+if (downloadBtn) {
+    downloadBtn.addEventListener('click', function() {
+        const selectedIds = Array.from(document.querySelectorAll('.pdf-checkbox:checked'))
+            .map(checkbox => checkbox.dataset.documentId);
+        
+        if (selectedIds.length === 0) {
+            alert('Veuillez sélectionner au moins un PDF');
+            return;
+        }
+        
+        // Créer un formulaire pour envoyer les IDs
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ path("app_download_pdfs") }}';
+        
+        // Ajouter le nom du dossier pour un meilleur nommage du ZIP
+        const folderNameInput = document.createElement('input');
+        folderNameInput.type = 'hidden';
+        folderNameInput.name = 'folder_name';
+        folderNameInput.value = '{{ folder.name }}';
+        form.appendChild(folderNameInput);
+        
+        // Ajouter les IDs
+        selectedIds.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'document_ids[]';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    });
+}
+</script>
+{% endblock %}

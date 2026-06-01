@@ -1,0 +1,178 @@
+{% extends 'base_public.html.twig' %}
+
+{% block title %}Inscription - MediaT{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .register-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+    
+    .register-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-width: 450px;
+        width: 100%;
+    }
+    
+    .register-header {
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        color: white;
+        text-align: center;
+        padding: 2rem 1.5rem 1.5rem;
+    }
+    
+    .register-body {
+        padding: 2rem 1.5rem;
+    }
+    
+    .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+    
+    .btn-register {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-register:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+    }
+    
+    .login-link {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .logo-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+    
+    .form-check {
+        margin-bottom: 1rem;
+    }
+    
+    .form-check-input:checked {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+    
+    .invalid-feedback {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="register-container">
+    <div class="register-card">
+        <div class="register-header">
+            <div class="logo-icon">📚</div>
+            <h2 class="mb-2">Créer un compte</h2>
+            <p class="mb-0 opacity-75"> MediaT</p>
+        </div>
+        
+        <div class="register-body">
+            {{ form_start(registrationForm) }}
+            
+            <div class="mb-3">
+                <label for="{{ registrationForm.email.vars.id }}" class="form-label fw-semibold">
+                    <i class="bi bi-envelope me-1"></i>
+                    Adresse email
+                </label>
+                {{ form_widget(registrationForm.email, {
+                    'attr': {
+                        'class': 'form-control',
+                        'placeholder': 'votre@email.com'
+                    }
+                }) }}
+                {{ form_errors(registrationForm.email) }}
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ registrationForm.plainPassword.vars.id }}" class="form-label fw-semibold">
+                    <i class="bi bi-lock me-1"></i>
+                    Mot de passe
+                </label>
+                {{ form_widget(registrationForm.plainPassword, {
+                    'attr': {
+                        'class': 'form-control',
+                        'placeholder': 'Mot de passe'
+                    }
+                }) }}
+                {{ form_errors(registrationForm.plainPassword) }}
+                <div class="form-text">
+                    <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Minimum 14 caractères recommandés
+                    </small>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <div class="form-check">
+                    {{ form_widget(registrationForm.agreeTerms, {
+                        'attr': {'class': 'form-check-input'}
+                    }) }}
+                    <label class="form-check-label" for="{{ registrationForm.agreeTerms.vars.id }}">
+                        J'accepte les conditions d'utilisation de la plateforme MediaT
+                    </label>
+                </div>
+                {{ form_errors(registrationForm.agreeTerms) }}
+            </div>
+
+            <button type="submit" class="btn btn-success btn-register w-100 mb-3">
+                <i class="bi bi-person-plus me-2"></i>
+                Créer mon compte
+            </button>
+            
+            {{ form_end(registrationForm) }}
+            
+            <div class="login-link">
+                <p class="text-muted mb-2">Déjà un compte ?</p>
+                <a href="{{ path('app_login') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>
+                    Se connecter
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer info -->
+<div class="position-fixed bottom-0 start-0 end-0 text-center text-white-50 p-3">
+    <small>
+        © {{ "now"|date("Y") }} MediaT</small>
+</div>
+{% endblock %}

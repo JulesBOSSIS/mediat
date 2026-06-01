@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}MediaT - Ressources{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>📚</text></svg>">
+        
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Bootstrap Icons -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+        
+        {% block stylesheets %}
+        <link href="{{ asset('css/base.css') }}" rel="stylesheet">
+        <link href="{{ asset('css/sidebar.css') }}" rel="stylesheet">
+        {% endblock %}
+    </head>
+    <body{% if app.user %} class="is-user{% if 'ROLE_ADMIN' in app.user.roles %} is-admin{% endif %}"{% endif %}>
+        <!-- Header -->
+        <header class="header">
+            <div class="container-fluid h-100">
+                <div class="row h-100 align-items-center">
+                    <!-- Logo -->
+                    <div class="col-auto">
+                        <a href="{{ path('app_accueil') }}" class="logo">
+                            <i class="bi bi-book me-2"></i>
+                            MediaT
+                        </a>
+                    </div>
+                    
+                    <!-- Barre de recherche (visible desktop uniquement) -->
+                    <div class="col search-container d-none d-lg-block">
+                        <form class="search-form" method="GET" action="{{ path('app_search') }}">
+                            <input type="text" 
+                                   name="query" 
+                                   class="form-control search-input" 
+                                   placeholder="Rechercher dans la documentation..."
+                                   value="{{ app.request.query.get('query') }}">
+                            <button type="submit" class="search-btn">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Menu utilisateur (visible desktop) -->
+                    <div class="col-auto d-none d-lg-block">
+                        {% if app.user %}
+                            <div class="dropdown">
+                                <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-person-circle me-1"></i>
+                                    {{ app.user.email }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ path('app_accueil') }}">
+                                        <i class="bi bi-house me-2"></i>Accueil
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_profile') }}">
+                                        <i class="bi bi-person me-2"></i>Mon Profil
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_favorites') }}">
+                                        <i class="bi bi-star-fill text-warning me-2"></i>Mes Favoris
+                                    </a></li>
+                                    {% if 'ROLE_ADMIN' in app.user.roles %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{{ path('app_admin') }}">
+                                            <i class="bi bi-shield-lock me-2"></i>Panneau d'administration
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ path('app_admin_guide') }}">
+                                            <i class="bi bi-question-circle me-2"></i>Guide d'administration
+                                        </a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_logout') }}">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+                                    </a></li>
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Spacer pour pousser les icônes à droite sur mobile -->
+                    <div class="col d-lg-none"></div>
+                    
+                    <!-- Icons à droite (mobile uniquement) -->
+                    <div class="col-auto d-lg-none d-flex gap-2">
+                        <!-- Icône recherche mobile -->
+                        <button class="btn btn-outline-light p-2" type="button" data-bs-toggle="modal" data-bs-target="#searchModal" title="Rechercher">
+                            <i class="bi bi-search" style="font-size: 1.3rem;"></i>
+                        </button>
+                        
+                        <!-- Menu utilisateur mobile -->
+                        {% if app.user %}
+                            <div class="dropdown">
+                                <button class="btn btn-outline-light p-2" type="button" data-bs-toggle="dropdown" title="Menu utilisateur">
+                                    <i class="bi bi-person-circle" style="font-size: 1.5rem;"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="{{ path('app_accueil') }}">
+                                        <i class="bi bi-house me-2"></i>Accueil
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_profile') }}">
+                                        <i class="bi bi-person me-2"></i>Mon Profil
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_favorites') }}">
+                                        <i class="bi bi-star-fill text-warning me-2"></i>Mes Favoris
+                                    </a></li>
+                                    {% if 'ROLE_ADMIN' in app.user.roles %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{{ path('app_admin') }}">
+                                            <i class="bi bi-shield-lock me-2"></i>Admin
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="{{ path('app_admin_guide') }}">
+                                            <i class="bi bi-question-circle me-2"></i>Guide
+                                        </a></li>
+                                    {% endif %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ path('app_logout') }}">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+                                    </a></li>
+                                </ul>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Bouton sidebar mobile (uniquement connecté) -->
+                        {% if app.user %}
+                            <button class="btn btn-outline-light p-2" id="sidebarToggle" title="Menu">
+                                <i class="bi bi-list" style="font-size: 1.3rem;"></i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Modal recherche mobile -->
+        <div class="modal fade" id="searchModal" tabindex="-1">
+            <div class="modal-dialog modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Rechercher</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form class="search-form" method="GET" action="{{ path('app_search') }}">
+                            <div class="input-group">
+                                <input type="text" 
+                                       name="query" 
+                                       class="form-control" 
+                                       placeholder="Rechercher dans la documentation..."
+                                       value="{{ app.request.query.get('query') }}"
+                                       autofocus>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar (uniquement connecté) -->
+        {% if app.user %}
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-resize-handle" id="sidebarResizeHandle"></div>
+            <div class="p-3">
+                <h6 class="text-muted text-uppercase mb-3">
+                    <i class="bi bi-folder2-open me-2"></i>
+                    Ressources
+                </h6>
+                
+                {% block sidebar %}
+                    {% import 'macros.html.twig' as macros %}
+                    {% if rootFolders is defined %}
+                        {{ macros.folder_tree(rootFolders, 0, app.user) }}
+                    {% else %}
+                        <p class="text-muted small">Aucun dossier disponible</p>
+                    {% endif %}
+                {% endblock %}
+                
+                {% include '_institutional_links.html.twig' %}
+            </div>
+        </aside>
+        {% else %}
+            <style>
+                .main-content {
+                    margin-left: 0 !important;
+                }
+            </style>
+        {% endif %}
+
+        <!-- Contenu principal -->
+        <main class="main-content">
+            {% block body %}{% endblock %}
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="container-fluid h-100">
+                <div class="row h-100 align-items-center">
+                    <div class="col">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                <small class="text">
+                                    © {{ "now"|date("Y") }} MediaT
+                                </small>
+                            </div>
+                            <small class="text">
+                                <i class="bi bi-cpu me-1"></i>
+                                <a href="{{ path('app_release_notes') }}"
+                                   class="link-light link-underline link-underline-opacity-0 link-underline-opacity-100-hover"
+                                   title="Notes de version">Version</a>
+                                {{ app_version }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        
+        {% block javascripts %}
+        <script>
+            // Toggle sidebar on mobile
+            document.getElementById('sidebarToggle')?.addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('show');
+            });
+            
+            // Fermer sidebar quand on clique en dehors (mobile)
+            document.addEventListener('click', function(e) {
+                const sidebar = document.getElementById('sidebar');
+                const sidebarToggle = document.getElementById('sidebarToggle');
+                
+                if (window.innerWidth <= 768 && 
+                    !sidebar.contains(e.target) && 
+                    !sidebarToggle?.contains(e.target)) {
+                    sidebar.classList.remove('show');
+                }
+            });
+            
+            // Activer l'item de sidebar selon l'URL
+            document.addEventListener('DOMContentLoaded', function() {
+                const currentPath = window.location.pathname;
+                const sidebarItems = document.querySelectorAll('.sidebar-item.file');
+                
+                sidebarItems.forEach(item => {
+                    item.addEventListener('click', function() {
+                        sidebarItems.forEach(si => si.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+                
+                // Restaurer la largeur sauvegardée
+                const savedWidth = localStorage.getItem('sidebarWidth');
+                if (savedWidth) {
+                    document.documentElement.style.setProperty('--sidebar-width', savedWidth);
+                }
+            });
+            
+            // Redimensionnement de la sidebar
+            let isResizing = false;
+            const resizeHandle = document.getElementById('sidebarResizeHandle');
+            const minWidth = 200;
+            const maxWidth = 600;
+            
+            if (resizeHandle) {
+                resizeHandle.addEventListener('mousedown', function(e) {
+                    isResizing = true;
+                    e.preventDefault();
+                    document.body.style.cursor = 'col-resize';
+                });
+            }
+            
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                
+                const newWidth = e.clientX;
+                
+                if (newWidth >= minWidth && newWidth <= maxWidth) {
+                    document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
+                }
+            });
+            
+            document.addEventListener('mouseup', function() {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = 'auto';
+                    // Sauvegarder la largeur
+                    const computedWidth = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').trim();
+                    localStorage.setItem('sidebarWidth', computedWidth);
+                }
+            });
+        </script>
+        {% endblock %}
+    </body>
+</html>

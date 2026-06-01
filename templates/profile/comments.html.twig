@@ -1,0 +1,117 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes commentaires - MediaT{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .profile-avatar {
+            width: 4.25rem;
+            height: 4.25rem;
+            background: linear-gradient(135deg, var(--bs-primary) 0%, #5a67d8 100%);
+            box-shadow: 0 0.35rem 1rem rgba(var(--bs-primary-rgb), 0.35);
+        }
+        .profile-sidebar .nav-link {
+            color: var(--bs-body-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .profile-sidebar .nav-link:hover { background: rgba(var(--bs-primary-rgb), 0.08); }
+        .profile-sidebar .nav-link.active {
+            background: rgba(var(--bs-primary-rgb), 0.15);
+            color: var(--bs-primary);
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid px-3 px-lg-4 py-4">
+    <div class="row g-4">
+        <div class="col-lg-3 col-xl-3">
+            {% include 'profile/_nav_sidebar.html.twig' with { current_route: 'app_profile_comments' } %}
+        </div>
+
+        <div class="col-lg-9 col-xl-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-body-secondary border-bottom py-3">
+                    <h1 class="h5 mb-0 fw-semibold d-flex align-items-center gap-2 flex-wrap">
+                        <i class="bi bi-chat-dots me-2 text-primary"></i>
+                        Mes commentaires
+                        {% if unread_comment_reply_count|default(0) > 0 %}
+                            <span class="badge rounded-pill text-bg-secondary bg-opacity-10 text-secondary-emphasis border fw-normal small">réponses à consulter</span>
+                        {% endif %}
+                    </h1>
+                    <p class="text-muted small mb-0 mt-2">Vue détaillée — retrouvez aussi tout sur <a href="{{ path('app_profile') }}#commentaires">votre profil</a>.</p>
+                </div>
+                <div class="card-body p-4">
+                    {% if comments|length > 0 %}
+                        {% for comment in comments %}
+                            <div class="mb-4 pb-4 {% if not loop.last %}border-bottom{% endif %} {{ comment.parentComment ? 'ps-2 border-start border-3 border-primary border-opacity-50' : '' }}">
+                                <div class="d-flex justify-content-between align-items-start mb-2 gap-2">
+                                    <div class="min-w-0">
+                                        <h2 class="h6 mb-1 d-flex align-items-center flex-wrap gap-2">
+                                            <span>
+                                                <i class="bi bi-file-earmark me-2"></i>
+                                                {% if comment.document %}
+                                                    <a href="{{ path('app_document_view', {'id': comment.document.id}) }}" class="text-decoration-none">
+                                                        {{ comment.document.title }}
+                                                    </a>
+                                                {% else %}
+                                                    —
+                                                {% endif %}
+                                            </span>
+                                            {% if comment.parentComment %}
+                                                <span class="badge rounded-pill text-bg-light border fw-normal small">Réponse dans un fil</span>
+                                            {% elseif comment.id in (unreadRootCommentIds|default([])) %}
+                                                <span class="badge rounded-pill text-bg-secondary bg-opacity-10 text-secondary-emphasis border fw-normal small">nouvelle réponse</span>
+                                            {% endif %}
+                                        </h2>
+                                        {% if comment.document and comment.document.folder %}
+                                            <small class="text-muted">
+                                                <i class="bi bi-folder me-1"></i>
+                                                {{ comment.document.folder.name }}
+                                            </small>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 delete-comment" data-comment-id="{{ comment.id }}">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2 ms-1 small">{{ comment.content|nl2br }}</div>
+                                <small class="text-muted ms-1 d-block mt-2">
+                                    <i class="bi bi-clock me-1"></i>
+                                    {{ comment.createdAt ? comment.createdAt|date('d/m/Y H:i') : '—' }}
+                                    {% if comment.updatedAt %}
+                                        <br><i class="bi bi-pencil me-1"></i>Modifié : {{ comment.updatedAt|date('d/m/Y H:i') }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-chat-left d-block fs-1 mb-3 opacity-50"></i>
+                            <p class="mb-3">Vous n'avez aucun commentaire pour le moment.</p>
+                            <a href="{{ path('app_profile') }}" class="btn btn-sm btn-primary">Retour au profil</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.delete-comment').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) return;
+        var commentId = this.dataset.commentId;
+        fetch('/comments/delete/' + commentId, { method: 'POST' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) location.reload();
+            })
+            .catch(function (e) { console.error(e); });
+    });
+});
+</script>
+{% endblock %}

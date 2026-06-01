@@ -1,0 +1,68 @@
+{% extends 'admin/admin_base.html.twig' %}
+{% import 'admin/_macros.html.twig' as admin_ui %}
+{% form_theme form 'bootstrap_5_layout.html.twig' 'admin/folders/folder_admin_form_theme.html.twig' %}
+
+{% block title %}Éditer un dossier - Admin{% endblock %}
+
+{% block admin_toolbar %}
+    {{ admin_ui.back_bar(path('app_admin_list_folders'), 'Liste des dossiers') }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="admin-page-title mb-2">
+            <i class="bi bi-pencil text-primary me-2"></i>
+            {{ folder.name }}
+        </h1>
+        <p class="admin-page-lead text-muted mb-4">Modifier le libellé, l'URL interne et les rôles requis.</p>
+
+        {% if form_errors(form) %}
+            <div class="alert alert-danger border-0 shadow-sm">{{ form_errors(form) }}</div>
+        {% endif %}
+
+        <div class="card admin-card border-0 shadow-sm">
+            <div class="card-body p-4">
+                {{ form_start(form, {'attr': {'novalidate': true}}) }}
+                    <div class="mb-3">
+                        {{ form_label(form.name) }}
+                        {{ form_widget(form.name, { attr: { class: 'form-control' } }) }}
+                        {% if form_errors(form.name) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.name) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.slug) }}
+                        {{ form_widget(form.slug, { attr: { class: 'form-control' } }) }}
+                        <small class="form-text text-muted">{{ form_help(form.slug) }}</small>
+                        {% if form_errors(form.slug) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.slug) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.requiredRoles) }}
+                        <div class="admin-role-picker border rounded-3 p-3 bg-light">
+                            {{ form_widget(form.requiredRoles) }}
+                        </div>
+                        <small class="form-text text-muted d-block mt-2">{{ form_help(form.requiredRoles) }}</small>
+                        {% if form_errors(form.requiredRoles) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.requiredRoles) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Enregistrer
+                        </button>
+                        <a href="{{ path('app_admin_list_folders') }}" class="btn btn-outline-secondary">
+                            Annuler
+                        </a>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

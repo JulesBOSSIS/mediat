@@ -1,0 +1,118 @@
+/**
+ * Tutoriel guidé MediaT — assombrissement + zone mise en évidence.
+ */
+/* Important : pas de pointer-events sur la racine, sinon tout l'écran capte les clics
+ * et empêche d'atteindre le lien « dossier » dans la trouée visible. Les bandes (.mediat-tour-shade)
+ * ont pointer-events: auto pour assombrir et bloquer ; la zone du trou laisse passer les clics. */
+.mediat-tour-root {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    pointer-events: none;
+}
+
+.mediat-tour-shade {
+    position: fixed;
+    background: rgba(15, 23, 42, 0.78);
+    pointer-events: auto;
+    transition: opacity 0.2s ease;
+}
+
+.mediat-tour-target-highlight {
+    position: relative;
+    border-radius: 0.5rem;
+    box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.95),
+        0 0 0 4px rgba(13, 110, 168, 0.65),
+        0 12px 40px rgba(0, 0, 0, 0.25);
+}
+
+.mediat-tour-popover {
+    position: fixed;
+    z-index: 10053;
+    min-width: min(340px, calc(100vw - 2rem));
+    max-width: min(440px, calc(100vw - 2rem));
+    /* Permet aux clics de traverser la zone vide si la bulle chevauche le lien mis en évidence */
+    pointer-events: none;
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    border-radius: 0.65rem;
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.06),
+        0 16px 48px rgba(0, 0, 0, 0.18);
+    padding: 1rem 1.1rem 0.85rem;
+}
+
+.mediat-tour-popover.mediat-tour-popover--center {
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.mediat-tour-popover-title {
+    font-weight: 600;
+    font-size: 1.05rem;
+    margin-bottom: 0.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mediat-tour-popover-body {
+    font-size: 0.925rem;
+    line-height: 1.55;
+    color: var(--bs-secondary-color, #6c757d);
+    margin-bottom: 0.85rem;
+}
+
+.mediat-tour-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mediat-tour-steps {
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color, #6c757d);
+}
+
+.mediat-tour-buttons {
+    display: flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
+    pointer-events: auto;
+}
+
+.mediat-tour-btn {
+    border: 0;
+    border-radius: 0.4rem;
+    padding: 0.38rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.15s ease;
+}
+
+.mediat-tour-btn--ghost {
+    background: transparent;
+    color: var(--bs-body-color, #212529);
+}
+
+.mediat-tour-btn--ghost:hover {
+    background: rgba(var(--bs-primary-rgb, 13, 110, 168), 0.1);
+}
+
+.mediat-tour-btn--primary {
+    background: #185f8d;
+    color: #fff;
+}
+
+.mediat-tour-btn--primary:hover {
+    filter: brightness(1.06);
+}
+
+body.mediat-tour-active {
+    overflow: hidden;
+}

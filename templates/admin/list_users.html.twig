@@ -1,0 +1,88 @@
+{% extends 'admin/admin_base.html.twig' %}
+{% import 'admin/_macros.html.twig' as admin_ui %}
+
+{% block title %}Liste des utilisateurs - MediaT{% endblock %}
+
+{% block admin_toolbar %}
+    {{ admin_ui.back_bar(path('app_admin'), "Panneau d'administration") }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row align-items-md-start justify-content-md-between gap-3 mb-4">
+    <div>
+        <h1 class="admin-page-title mb-2">
+            <i class="bi bi-people text-primary me-2"></i>
+            Utilisateurs
+        </h1>
+        <p class="admin-page-lead text-muted mb-0">{{ users|length }} compte{{ users|length > 1 ? 's' : '' }}</p>
+    </div>
+    <div class="flex-shrink-0">
+        <a href="{{ path('app_admin_create_user') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus me-1"></i>
+            Nouvel utilisateur
+        </a>
+    </div>
+</div>
+
+{% if users is empty %}
+    <div class="alert alert-info border-0 shadow-sm" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        Aucun utilisateur pour le moment.
+    </div>
+{% else %}
+    <div class="admin-table-wrap card admin-card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">E-mail</th>
+                        <th scope="col">Rôle</th>
+                        <th scope="col" class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                        <tr>
+                            <td><strong>{{ user.email }}</strong></td>
+                            <td>
+                                {% if 'ROLE_ADMIN' in user.roles %}
+                                    <span class="badge rounded-pill text-bg-danger bg-opacity-10 text-danger-emphasis border border-danger-subtle">
+                                        Administrateur
+                                    </span>
+                                {% elseif 'ROLE_PARTNER' in user.roles %}
+                                    <span class="badge rounded-pill text-bg-warning bg-opacity-25 text-warning-emphasis border border-warning-subtle">
+                                        Partenaire
+                                    </span>
+                                {% else %}
+                                    <span class="badge rounded-pill text-bg-secondary bg-opacity-25 text-secondary-emphasis border border-secondary-subtle">
+                                        Utilisateur
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <a href="{{ path('app_admin_edit_user', { id: user.id }) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil me-1"></i>
+                                    Modifier
+                                </a>
+                                <form method="POST" action="{{ path('app_admin_delete_user', { id: user.id }) }}" class="d-inline" onsubmit="return confirm('Supprimer cet utilisateur ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ user.id) }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash me-1"></i>
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+<div class="mt-4 pt-3 border-top border-opacity-50">
+    <a href="{{ path('app_admin') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left-short"></i> Panneau d'administration
+    </a>
+</div>
+{% endblock %}

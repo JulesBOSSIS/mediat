@@ -1,0 +1,50 @@
+{# Barre latérale profil — current_route: nom de route Symfony pour l'état actif #}
+{% set current = current_route|default(app.request.attributes.get('_route')) %}
+<div class="card profile-sidebar border-0 shadow-sm sticky-lg-top mb-4 mb-lg-0" data-tour="tour-profile-nav">
+    <div class="card-body p-4">
+        <div class="text-center mb-3">
+            <div class="profile-avatar mx-auto mb-3 d-flex align-items-center justify-content-center rounded-circle text-white">
+                <i class="bi bi-person-fill fs-2"></i>
+            </div>
+            <h2 class="h6 fw-semibold mb-1 text-break">{{ app.user.email }}</h2>
+            <div class="d-flex flex-wrap gap-1 justify-content-center">
+                {% if 'ROLE_ADMIN' in app.user.roles %}
+                    <span class="badge rounded-pill text-bg-danger">Administrateur</span>
+                {% endif %}
+                {% if 'ROLE_PARTNER' in app.user.roles %}
+                    <span class="badge rounded-pill text-bg-info">Partenaire</span>
+                {% endif %}
+                {% if 'ROLE_ADMIN' not in app.user.roles and 'ROLE_PARTNER' not in app.user.roles %}
+                    <span class="badge rounded-pill text-bg-primary">Utilisateur</span>
+                {% endif %}
+            </div>
+        </div>
+        <hr class="my-3 opacity-25">
+        <nav class="nav nav-pills flex-column gap-1">
+            <a class="nav-link rounded-2 {% if current == 'app_profile' %}active{% endif %}" href="{{ path('app_profile') }}">
+                <i class="bi bi-person me-2"></i>Mon profil
+            </a>
+            <a class="nav-link rounded-2 {% if current == 'app_favorites' %}active{% endif %}" href="{{ path('app_profile') }}#favoris">
+                <i class="bi bi-star-fill text-warning me-2"></i>Mes favoris
+            </a>
+            <a class="nav-link rounded-2 d-flex align-items-center justify-content-between gap-2 {% if current == 'app_profile_comments' %}active{% endif %}" href="{{ path('app_profile') }}#commentaires">
+                <span class="text-start"><i class="bi bi-chat-text me-2"></i>Mes commentaires</span>
+                {% if unread_comment_reply_count|default(0) > 0 %}
+                    <span class="badge rounded-pill text-bg-secondary bg-opacity-25 text-secondary-emphasis border-0 fw-normal flex-shrink-0" style="font-size:0.65rem;" title="Réponses à lire">{{ unread_comment_reply_count }}</span>
+                {% endif %}
+            </a>
+            {% if 'ROLE_ADMIN' in app.user.roles %}
+                <a class="nav-link rounded-2 {% if current == 'app_profile_change_password' %}active{% endif %}" href="{{ path('app_profile_change_password') }}">
+                    <i class="bi bi-key me-2"></i>Mot de passe
+                </a>
+                <a class="nav-link rounded-2 text-danger-emphasis" href="{{ path('app_admin') }}">
+                    <i class="bi bi-shield-lock me-2"></i>Administration
+                </a>
+            {% endif %}
+            <hr class="my-2 opacity-25">
+            <a class="nav-link rounded-2" href="{{ path('app_accueil') }}">
+                <i class="bi bi-house me-2"></i>Accueil
+            </a>
+        </nav>
+    </div>
+</div>

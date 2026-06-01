@@ -1,0 +1,263 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Profil - MediaT{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .profile-page { --profile-accent: var(--bs-primary); }
+        .profile-avatar {
+            width: 4.25rem;
+            height: 4.25rem;
+            background: linear-gradient(135deg, var(--bs-primary) 0%, #5a67d8 100%);
+            box-shadow: 0 0.35rem 1rem rgba(var(--bs-primary-rgb), 0.35);
+        }
+        .profile-sidebar .nav-link {
+            color: var(--bs-body-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        .profile-sidebar .nav-link:hover {
+            background: rgba(var(--bs-primary-rgb), 0.08);
+        }
+        .profile-sidebar .nav-link.active {
+            background: rgba(var(--bs-primary-rgb), 0.15);
+            color: var(--bs-primary);
+        }
+        .profile-section-anchor {
+            scroll-margin-top: 5.5rem;
+        }
+        .profile-stat-pill {
+            font-size: 0.8rem;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="profile-page container-fluid px-3 px-lg-4 py-4">
+    <div class="row g-4">
+        <div class="col-lg-3 col-xl-3">
+            {% include 'profile/_nav_sidebar.html.twig' with { current_route: 'app_profile' } %}
+        </div>
+
+        <div class="col-lg-9 col-xl-9">
+            <div class="d-flex flex-column flex-md-row align-items-md-start justify-content-md-between gap-3 mb-4">
+                <div>
+                    <h1 class="h3 fw-semibold mb-1">
+                        <i class="bi bi-person-badge me-2 text-primary"></i>Mon espace
+                    </h1>
+                    <p class="text-muted small mb-0">Informations du compte, favoris et commentaires en un seul endroit.</p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge rounded-pill text-bg-light border profile-stat-pill">
+                        <i class="bi bi-star-fill text-warning me-1"></i>{{ favoriteDocuments|length }} favori{{ favoriteDocuments|length != 1 ? 's' : '' }}
+                    </span>
+                    <span class="badge rounded-pill text-bg-light border profile-stat-pill">
+                        <i class="bi bi-chat-dots text-primary me-1"></i>{{ comments|length }} commentaire{{ comments|length != 1 ? 's' : '' }}
+                    </span>
+                    {% if unread_comment_reply_count|default(0) > 0 %}
+                        <span class="badge rounded-pill text-bg-secondary bg-opacity-10 text-secondary-emphasis border profile-stat-pill" title="Réponses d’autres membres à vos commentaires">
+                            <i class="bi bi-reply-fill me-1 opacity-75"></i>{{ unread_comment_reply_count }} réponse{{ unread_comment_reply_count > 1 ? 's' : '' }} à lire
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Informations #}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h2 class="h5 fw-semibold mb-3 d-flex align-items-center gap-2">
+                        <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center" style="width:2.25rem;height:2.25rem;">
+                            <i class="bi bi-info-circle"></i>
+                        </span>
+                        Informations personnelles
+                    </h2>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="text-uppercase text-muted small fw-semibold mb-1" style="font-size:0.65rem;letter-spacing:0.06em;">E-mail</div>
+                            <p class="mb-0 fw-medium text-break">{{ app.user.email }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-uppercase text-muted small fw-semibold mb-1" style="font-size:0.65rem;letter-spacing:0.06em;">Rôles</div>
+                            <ul class="list-unstyled mb-0 small">
+                                {% for role in app.user.roles %}
+                                    <li class="mb-1">
+                                        {% if role == 'ROLE_USER' %}
+                                            <span class="badge text-bg-secondary bg-opacity-10 text-secondary-emphasis border">Utilisateur</span>
+                                        {% elseif role == 'ROLE_ADMIN' %}
+                                            <span class="badge text-bg-danger bg-opacity-10 text-danger-emphasis border">Administrateur</span>
+                                        {% elseif role == 'ROLE_PARTNER' %}
+                                            <span class="badge text-bg-info bg-opacity-10 text-info-emphasis border">Partenaire</span>
+                                        {% else %}
+                                            <span class="badge text-bg-light border">{{ role }}</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# Favoris #}
+            <section id="favoris" class="profile-section-anchor mb-4" data-tour="tour-profile-favorites">
+                <div class="card border-0 shadow-sm overflow-hidden">
+                    <div class="card-header bg-body-secondary border-bottom py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h2 class="h5 mb-0 fw-semibold d-flex align-items-center gap-2">
+                            <i class="bi bi-star-fill text-warning"></i>
+                            Mes favoris
+                        </h2>
+                        <a href="{{ path('app_favorites') }}" class="btn btn-sm btn-outline-primary">Page des favoris</a>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if favoriteDocuments is empty %}
+                            <div class="text-center text-muted py-4 px-2 rounded-3 border border-dashed bg-body-secondary bg-opacity-25">
+                                <i class="bi bi-star d-block fs-1 mb-2 opacity-50"></i>
+                                <p class="mb-2 small">Aucun favori pour le moment.</p>
+                                <a href="{{ path('app_search') }}" class="btn btn-sm btn-outline-primary">Explorer la documentation</a>
+                            </div>
+                        {% else %}
+                            <div class="row g-3">
+                                {% for document in favoriteDocuments %}
+                                    <div class="col-md-6">
+                                        <div class="card h-100 border shadow-sm">
+                                            <div class="card-body d-flex flex-column">
+                                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                                    <h3 class="h6 mb-0">
+                                                        {% if document.isLink() %}
+                                                            <i class="bi bi-link-45deg text-primary me-1"></i>
+                                                        {% elseif document.isPdf() %}
+                                                            <i class="bi bi-file-earmark-pdf text-danger me-1"></i>
+                                                        {% else %}
+                                                            <i class="bi bi-file-earmark text-secondary me-1"></i>
+                                                        {% endif %}
+                                                        <span class="fw-semibold">{{ document.title }}</span>
+                                                    </h3>
+                                                    <button type="button" class="btn btn-sm btn-outline-warning flex-shrink-0 favorite-btn-profile"
+                                                            data-document-id="{{ document.id }}" title="Retirer des favoris">
+                                                        <i class="bi bi-star-fill"></i>
+                                                    </button>
+                                                </div>
+                                                {% if document.folder %}
+                                                    <p class="small text-muted mb-3">
+                                                        <i class="bi bi-folder2-open me-1"></i>{{ document.folder.name }}
+                                                    </p>
+                                                {% endif %}
+                                                <div class="d-flex flex-wrap gap-2 mt-auto">
+                                                    {% if document.isPdf() %}
+                                                        <a href="{{ path('app_document_view', { id: document.id }) }}" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-eye me-1"></i>Ouvrir
+                                                        </a>
+                                                        <a href="{{ path('app_document_download', { id: document.id }) }}" class="btn btn-sm btn-outline-secondary">
+                                                            <i class="bi bi-download me-1"></i>PDF
+                                                        </a>
+                                                    {% elseif document.isLink() %}
+                                                        {% set linkUrl = document.externalUrl ?? document.path %}
+                                                        <a href="{{ linkUrl }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-box-arrow-up-right me-1"></i>Lien
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            {# Commentaires #}
+            <section id="commentaires" class="profile-section-anchor mb-4" data-tour="tour-profile-comments">
+                <div class="card border-0 shadow-sm overflow-hidden">
+                    <div class="card-header bg-body-secondary border-bottom py-3 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                        <h2 class="h5 mb-0 fw-semibold d-flex align-items-center gap-2 flex-wrap">
+                            <i class="bi bi-chat-square-text text-primary"></i>
+                            Mes commentaires
+                            {% if unread_comment_reply_count|default(0) > 0 %}
+                                <span class="badge rounded-pill text-bg-secondary bg-opacity-10 text-secondary-emphasis border fw-normal small">réponses à consulter</span>
+                            {% endif %}
+                        </h2>
+                        <a href="{{ path('app_profile_comments') }}" class="btn btn-sm btn-outline-primary">Page des commentaires</a>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if comments|length > 0 %}
+                            <div class="vstack gap-3">
+                                {% for comment in comments %}
+                                    <div class="border rounded-3 p-3 bg-body-secondary bg-opacity-25 {{ comment.parentComment ? 'border-start border-3 border-primary border-opacity-50' : '' }}">
+                                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                            <div class="min-w-0">
+                                                <div class="fw-semibold text-break d-flex align-items-center flex-wrap gap-2">
+                                                    <span>
+                                                        <i class="bi bi-file-earmark-text me-1 text-primary"></i>
+                                                        {% if comment.document %}
+                                                            <a href="{{ path('app_document_view', { id: comment.document.id }) }}" class="text-decoration-none">
+                                                                {{ comment.document.title }}
+                                                            </a>
+                                                        {% else %}
+                                                            —
+                                                        {% endif %}
+                                                    </span>
+                                                    {% if comment.parentComment %}
+                                                        <span class="badge rounded-pill text-bg-light border fw-normal small">Réponse dans un fil</span>
+                                                    {% elseif comment.id in (unreadRootCommentIds|default([])) %}
+                                                        <span class="badge rounded-pill text-bg-secondary bg-opacity-10 text-secondary-emphasis border fw-normal small">nouvelle réponse</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if comment.document and comment.document.folder %}
+                                                    <small class="text-muted"><i class="bi bi-folder2-open me-1"></i>{{ comment.document.folder.name }}</small>
+                                                {% endif %}
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger flex-shrink-0 delete-comment-profile" data-comment-id="{{ comment.id }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                        <div class="small text-body-secondary mb-2">{{ comment.content|nl2br }}</div>
+                                        <div class="small text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ comment.createdAt ? comment.createdAt|date('d/m/Y H:i') : '—' }}
+                                            {% if comment.updatedAt %}
+                                                <span class="ms-2"><i class="bi bi-pencil me-1"></i>{{ comment.updatedAt|date('d/m/Y H:i') }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center text-muted py-4 px-2 rounded-3 border border-dashed bg-body-secondary bg-opacity-25">
+                                <i class="bi bi-chat-left-quote d-block fs-1 mb-2 opacity-50"></i>
+                                <p class="mb-2 small">Vous n'avez pas encore commenté de document.</p>
+                                <a href="{{ path('app_accueil') }}" class="btn btn-sm btn-outline-primary">Parcourir les ressources</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.favorite-btn-profile').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var docId = this.dataset.documentId;
+        if (!docId || !confirm('Retirer ce document des favoris ?')) return;
+        fetch('/favorites/remove/' + docId, { method: 'POST' })
+            .then(function (r) { return r.json(); })
+            .then(function () { location.reload(); })
+            .catch(function (e) { console.error(e); });
+    });
+});
+document.querySelectorAll('.delete-comment-profile').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        var id = this.dataset.commentId;
+        if (!id || !confirm('Supprimer ce commentaire ?')) return;
+        fetch('/comments/delete/' + id, { method: 'POST' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) { if (data.success) location.reload(); })
+            .catch(function (e) { console.error(e); });
+    });
+});
+</script>
+{% endblock %}

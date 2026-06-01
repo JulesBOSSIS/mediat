@@ -1,0 +1,38 @@
+{% extends 'admin/admin_base.html.twig' %}
+{% import 'admin/_macros.html.twig' as admin_ui %}
+
+{% block title %}{{ title }} — Admin{% endblock %}
+
+{% block admin_toolbar %}
+    {{ admin_ui.back_bar(path('app_admin_list_documents'), 'Liste des documents') }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <h1 class="admin-page-title mb-4">{{ title }}</h1>
+        <div class="card admin-card border-0 shadow-sm">
+            <div class="card-body p-4">
+                {{ form_start(form) }}
+                    <div class="d-flex flex-column gap-4">
+                        {{ form_row(form.title) }}
+                        {{ form_row(form.documentType) }}
+                        {{ form_row(form.folder) }}
+                        {{ form_row(form.position) }}
+                        {% if form.file is defined %}
+                            {{ form_row(form.file) }}
+                        {% endif %}
+                        {% if form.externalUrl is defined %}
+                            {{ form_row(form.externalUrl) }}
+                        {% endif %}
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary">Enregistrer</button>
+                        <a href="{{ path('app_admin_list_documents') }}" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

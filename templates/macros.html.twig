@@ -1,0 +1,22 @@
+{% macro folder_tree(folders, level = 0, user = null) %}
+    {% for folder in folders %}
+        {% if user is null or folder.requiredRoles is empty or folder.requiredRoles is null %}
+            {% set isAccessible = true %}
+        {% else %}
+            {% set isAccessible = false %}
+            {% for role in folder.requiredRoles %}
+                {% if role in user.roles %}
+                    {% set isAccessible = true %}
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        {% if isAccessible %}
+        <a href="{{ path('app_folder_view', {'id': folder.id}) }}" class="sidebar-item folder" data-folder-id="{{ folder.id }}" style="margin-left: {{ level * 20 }}px" title="Visualiser le dossier">
+            <i class="bi bi-folder sidebar-icon"></i>
+            <span class="folder-name">{{ folder.name }}</span>
+            <i class="bi bi-eye folder-view-icon"></i>
+        </a>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}

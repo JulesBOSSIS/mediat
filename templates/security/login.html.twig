@@ -1,0 +1,190 @@
+{% extends 'base_public.html.twig' %}
+
+{% block title %}Connexion - MediaT{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .login-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-width: 400px;
+        width: 100%;
+    }
+    
+    .login-header {
+        background: linear-gradient(135deg, #2c3e50, #34495e);
+        color: white;
+        text-align: center;
+        padding: 2rem 1.5rem 1.5rem;
+    }
+    
+    .login-body {
+        padding: 2rem 1.5rem;
+    }
+    
+    .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .btn-login {
+        background: linear-gradient(135deg, #007bff, #0056b3);
+        border: none;
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+    }
+    
+    .register-link {
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e9ecef;
+    }
+    
+    .logo-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="logo-icon">📚</div>
+            <h2 class="mb-2">MediaT</h2>
+            <p class="mb-0 opacity-75">Plateforme de documentation</p>
+        </div>
+        
+        <div class="login-body">
+            {% if error %}
+                <div class="alert alert-danger d-flex align-items-center mb-4">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    {{ error_message|default('Identifiants invalides.') }}
+                </div>
+            {% endif %}
+
+            {% if app.user %}
+                <div class="alert alert-info d-flex align-items-center mb-4">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    Vous êtes connecté en tant que {{ app.user.userIdentifier }}
+                    <a href="{{ path('app_logout') }}" class="btn btn-sm btn-outline-primary ms-auto">
+                        Déconnexion
+                    </a>
+                </div>
+            {% endif %}
+
+            <form method="post">
+                <div class="mb-3">
+                    <label for="username" class="form-label fw-semibold">
+                        <i class="bi bi-envelope me-1"></i>
+                        Adresse email
+                    </label>
+                    <input type="email" 
+                           value="{{ last_username }}" 
+                           name="_username" 
+                           id="username" 
+                           class="form-control" 
+                           autocomplete="email" 
+                           required 
+                           autofocus
+                           placeholder="votre@email.com">
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label fw-semibold">
+                        <i class="bi bi-lock me-1"></i>
+                        Mot de passe
+                    </label>
+                    <input type="password" 
+                           name="_password" 
+                           id="password" 
+                           class="form-control" 
+                           autocomplete="current-password" 
+                           required
+                           placeholder="Mot de passe">
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" 
+                           name="_remember_me" 
+                           id="remember_me" 
+                           class="form-check-input">
+                    <label class="form-check-label" for="remember_me">
+                        Se souvenir de moi !
+                    </label>
+                </div>
+
+                {% if 'ROLE_ADMIN' in app.user.roles|default([]) %}
+                <div class="mb-3 text-end">
+                    <a href="{{ path('app_forgot_password') }}" class="text-decoration-none text-muted small">
+                        Mot de passe oublié ?
+                    </a>
+                </div>
+                {% endif %}
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <button class="btn btn-primary btn-login w-100 mb-3" type="submit">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    Se connecter
+                </button>
+            </form>
+
+            {% if 'ROLE_ADMIN' in app.user.roles|default([]) %}
+            <div class="register-link">
+                <p class="text-muted mb-2">Déjà un compte ?</p>
+                <a href="{{ path('app_register') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>
+                    Créer un compte
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Footer info -->
+<div class="position-fixed bottom-0 start-0 end-0 text-center text-white-50 p-3">
+    <small>
+        © {{ "now"|date("Y") }} MediaT</small>
+</div>
+{% endblock %}

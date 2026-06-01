@@ -1,0 +1,184 @@
+{% extends 'base_public.html.twig' %}
+
+{% block title %}Validation du code - MediaT{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .verify-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+    
+    .verify-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-width: 500px;
+        width: 100%;
+    }
+    
+    .verify-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        text-align: center;
+        padding: 2rem 1.5rem 1.5rem;
+    }
+    
+    .verify-body {
+        padding: 2rem 1.5rem;
+    }
+    
+    .email-badge {
+        background-color: #e9ecef;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin: 1rem 0;
+        text-align: center;
+    }
+    
+    .info-box {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-left: 4px solid #667eea;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+    }
+    
+    .info-box h5 {
+        color: #2c3e50;
+        margin-bottom: 0.75rem;
+    }
+    
+    .form-control {
+        border-radius: 10px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        text-align: center;
+        font-size: 24px;
+        letter-spacing: 4px;
+        font-weight: bold;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn-verify {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .btn-verify:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .invalid-feedback {
+        display: block;
+        color: #dc3545;
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="verify-container">
+    <div class="verify-card">
+        <div class="verify-header">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📧</div>
+            <h2 class="mb-2">Vérification du code</h2>
+            <p class="mb-0 opacity-75">MediaT</p>
+        </div>
+        
+        <div class="verify-body">
+            {% for message in app.flashes('error') %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-circle me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+            
+            {% for message in app.flashes('success') %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>{{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+            
+            <p class="text-center mb-3">Un code de validation a été envoyé à l'adresse email suivante :</p>
+            
+            <div class="email-badge">
+                {{ email }}
+            </div>
+            
+            <div class="info-box">
+                <h5><i class="bi bi-info-circle me-2"></i>Instructions</h5>
+                <ul class="mb-0">
+                    <li>Vérifiez votre boîte mail (et les spams si nécessaire)</li>
+                    <li>Entrez le code à 8 chiffres reçu par email</li>
+                    <li>Le code est valide pendant 30 minutes</li>
+                </ul>
+            </div>
+            
+            {{ form_start(form) }}
+            
+            <div class="mb-4">
+                <label for="{{ form.code.vars.id }}" class="form-label fw-semibold text-center d-block mb-2">
+                    Code de validation
+                </label>
+                {{ form_widget(form.code, {
+                    'attr': {
+                        'class': 'form-control',
+                        'placeholder': '12345678',
+                        'autofocus': true
+                    }
+                }) }}
+                {{ form_errors(form.code) }}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-verify mb-3">
+                <i class="bi bi-check-lg me-2"></i>
+                Valider le code
+            </button>
+            
+            {{ form_end(form) }}
+            
+            <div class="text-center mt-4">
+                <p class="text-muted mb-2">Vous n'avez pas reçu le code ?</p>
+                <a href="{{ path('app_register') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Refaire une demande
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Footer info -->
+<div class="position-fixed bottom-0 start-0 end-0 text-center text-white-50 p-3">
+    <small>
+        © {{ "now"|date("Y") }} MediaT</small>
+</div>
+{% endblock %}

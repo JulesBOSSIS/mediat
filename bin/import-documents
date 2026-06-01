@@ -1,0 +1,277 @@
+#!/usr/bin/env php
+<?php
+
+require_once dirname(__DIR__).'/vendor/autoload.php';
+
+use App\Entity\Document;
+use App\Entity\Folder;
+use Doctrine\ORM\EntityManager;
+use Symfony\Component\Dotenv\Dotenv;
+
+// Load .env file
+$dotenv = new Dotenv();
+$dotenv->loadEnv(dirname(__DIR__).'/.env.local');
+
+// Bootstrap Symfony
+$kernel = new \App\Kernel($_ENV['APP_ENV'] ?? 'dev', $_ENV['APP_DEBUG'] ?? true);
+$kernel->boot();
+$em = $kernel->getContainer()->get('doctrine.orm.entity_manager');
+
+// Get arguments
+$sourcePath = $argv[1] ?? null;
+$targetFolderId = $argv[2] ?? null;
+
+if (!$sourcePath) {
+    echo "Usage: php import-documents <source_path> [target_folder_id]\n";
+    echo "Example: php import-documents './My Documents/'\n";
+    echo "Example: php import-documents './My Documents/' 5\n";
+    exit(1);
+}
+
+// Resolve relative paths
+if (strpos($sourcePath, '/') !== 0) {
+    $sourcePath = getcwd() . '/' . $sourcePath;
+}
+
+if (!is_dir($sourcePath)) {
+    echo "Error: Source directory not found: $sourcePath\n";
+    exit(1);
+}
+
+$targetFolder = null;
+if ($targetFolderId) {
+    $targetFolder = $em->getRepository(Folder::class)->find($targetFolderId);
+    if (!$targetFolder) {
+        echo "Error: Target folder not found: $targetFolderId\n";
+        exit(1);
+    }
+}
+
+try {
+    importDirectoryContents($em, $sourcePath, $targetFolder);
+    echo "✓ Import completed successfully!\n";
+} catch (Exception $e) {
+    echo "Error: " . $e->getMessage() . "\n";
+    exit(1);
+}
+
+function importDirectoryContents(EntityManager $em, string $sourcePath, ?Folder $parentFolder): void
+{
+    $items = [];
+    
+    // Scan directory
+    if ($handle = opendir($sourcePath)) {
+        while (false !== ($entry = readdir($handle))) {
+            if ($entry !== '.' && $entry !== '..') {
+                $items[] = $entry;
+            }
+        }
+        closedir($handle);
+    }
+
+    // Sort items naturally
+    natsort($items);
+    $items = array_values($items);
+
+    foreach ($items as $item) {
+        $fullPath = $sourcePath . '/' . $item;
+
+        // Skip Windows alternate data streams and system files
+        if (strpos($item, ':') !== false || in_array($item, ['Thumbs.db', 'Desktop.ini'])) {
+            continue;
+        }
+
+        if (is_dir($fullPath)) {
+            // Check if directory contains PDFs (recursively)
+            if (directoryContainsPDF($fullPath)) {
+                importDirectory($em, $fullPath, $parentFolder);
+            }
+        } elseif (is_file($fullPath)) {
+            // Only process PDF files at root level
+            if (isPDFFile($fullPath)) {
+                // Copy file to uploads
+                $destPath = copyFileToUploads($fullPath, $item);
+
+                // Create document
+                $document = new Document();
+                $document->setTitle($item);
+                $document->setPath($destPath);
+                $document->setDocumentType(Document::TYPE_FILE);
+                $document->setMimeType('application/pdf');
+                $document->setPosition(0);
+                $document->setFolder($parentFolder);
+
+                $em->persist($document);
+
+                echo "  [PDF] $item\n";
+            }
+        }
+    }
+
+    $em->flush();
+}
+
+function importDirectory(EntityManager $em, string $sourcePath, ?Folder $parentFolder): ?Folder
+{
+    $items = [];
+    
+    // Scan directory
+    if ($handle = opendir($sourcePath)) {
+        while (false !== ($entry = readdir($handle))) {
+            if ($entry !== '.' && $entry !== '..') {
+                $items[] = $entry;
+            }
+        }
+        closedir($handle);
+    }
+
+    // Sort items naturally
+    natsort($items);
+    $items = array_values($items);
+
+    $position = 0;
+    $folderToReturn = null;
+    $hasContent = false;
+
+    foreach ($items as $item) {
+        $fullPath = $sourcePath . '/' . $item;
+
+        // Skip Windows alternate data streams and system files
+        if (strpos($item, ':') !== false || in_array($item, ['Thumbs.db', 'Desktop.ini'])) {
+            continue;
+        }
+
+        if (is_dir($fullPath)) {
+            // Check if directory contains PDFs (recursively)
+            if (directoryContainsPDF($fullPath)) {
+                // Create folder only if it contains PDFs
+                if ($folderToReturn === null) {
+                    $folderToReturn = new Folder();
+                    $folderToReturn->setName(basename($sourcePath));
+                    $folderToReturn->setSlug(slugifyFolder(basename($sourcePath)));
+                    $folderToReturn->setPosition(0);
+                    $folderToReturn->setParent($parentFolder);
+                    $em->persist($folderToReturn);
+                }
+
+                $subFolder = importDirectory($em, $fullPath, $folderToReturn);
+                if ($subFolder !== null) {
+                    echo "  [Folder] $item\n";
+                    $hasContent = true;
+                }
+                $position++;
+            }
+        } elseif (is_file($fullPath)) {
+            // Only process PDF files
+            if (isPDFFile($fullPath)) {
+                // Create parent folder if not already created
+                if ($folderToReturn === null) {
+                    $folderToReturn = new Folder();
+                    $folderToReturn->setName(basename($sourcePath));
+                    $folderToReturn->setSlug(slugifyFolder(basename($sourcePath)));
+                    $folderToReturn->setPosition(0);
+                    $folderToReturn->setParent($parentFolder);
+                    $em->persist($folderToReturn);
+                }
+
+                // Copy file to uploads
+                $destPath = copyFileToUploads($fullPath, $item);
+
+                // Create document
+                $document = new Document();
+                $document->setTitle($item);
+                $document->setPath($destPath);
+                $document->setDocumentType(Document::TYPE_FILE);
+                $document->setMimeType('application/pdf');
+                $document->setPosition($position);
+                $document->setFolder($folderToReturn);
+
+                $em->persist($document);
+
+                echo "  [PDF] $item (pos: $position)\n";
+
+                $position++;
+                $hasContent = true;
+            }
+        }
+    }
+
+    // Flush only if this folder has content
+    if ($hasContent && $folderToReturn !== null) {
+        $em->flush();
+        return $folderToReturn;
+    }
+
+    return null;
+}
+
+function copyFileToUploads(string $sourcePath, string $filename): string
+{
+    $uploadsDir = dirname(__DIR__) . '/public/uploads/documents';
+    
+    if (!is_dir($uploadsDir)) {
+        mkdir($uploadsDir, 0755, true);
+    }
+
+    // Generate unique filename
+    $ext = pathinfo($filename, PATHINFO_EXTENSION);
+    $nameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
+    $newFilename = $nameWithoutExt . '_' . uniqid() . '.' . $ext;
+
+    $destPath = $uploadsDir . '/' . $newFilename;
+    copy($sourcePath, $destPath);
+    chmod($destPath, 0644);
+
+    return 'documents/' . $newFilename;
+}
+
+function isPDFFile(string $filePath): bool
+{
+    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+    return $ext === 'pdf';
+}
+
+function directoryContainsPDF(string $dirPath): bool
+{
+    if (!is_dir($dirPath)) {
+        return false;
+    }
+
+    $items = [];
+    if ($handle = opendir($dirPath)) {
+        while (false !== ($entry = readdir($handle))) {
+            if ($entry !== '.' && $entry !== '..') {
+                $items[] = $entry;
+            }
+        }
+        closedir($handle);
+    }
+
+    foreach ($items as $item) {
+        $fullPath = $dirPath . '/' . $item;
+
+        // Skip Windows alternate data streams and system files
+        if (strpos($item, ':') !== false || in_array($item, ['Thumbs.db', 'Desktop.ini'])) {
+            continue;
+        }
+
+        if (is_dir($fullPath)) {
+            // Recursively check subdirectories
+            if (directoryContainsPDF($fullPath)) {
+                return true;
+            }
+        } elseif (is_file($fullPath) && isPDFFile($fullPath)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function slugifyFolder(string $name): string
+{
+    $slug = strtolower($name);
+    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
+    $slug = trim($slug, '-');
+    return $slug;
+}

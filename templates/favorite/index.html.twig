@@ -1,0 +1,101 @@
+{% extends "base.html.twig" %}
+
+{% block title %}Mes Favoris - MediaT{% endblock %}
+
+{% block body %}
+<div class="container-fluid py-4" data-tour="tour-favorites-page">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="mb-1">
+                <i class="bi bi-star-fill text-warning me-2"></i>
+                Mes Favoris
+            </h1>
+            <p class="text-muted">Vous avez {{ favoriteDocuments|length }} document(s) en favoris</p>
+        </div>
+    </div>
+
+    {% if favoriteDocuments is empty %}
+        <div class="alert alert-info" role="alert">
+            <i class="bi bi-info-circle me-2"></i>
+            Vous n'avez pas encore de documents en favoris. 
+            <a href="{{ path('app_search') }}">Commencez à explorer</a> et marquez vos documents préférés !
+        </div>
+    {% else %}
+        <div class="row g-4">
+            {% for document in favoriteDocuments %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title mb-0">
+                                    {% if document.isLink %}
+                                        <i class="bi bi-link-45deg text-primary me-2"></i>
+                                    {% elseif document.isPdf %}
+                                        <i class="bi bi-file-pdf text-danger me-2"></i>
+                                    {% else %}
+                                        <i class="bi bi-file-earmark text-secondary me-2"></i>
+                                    {% endif %}
+                                    {{ document.title }}
+                                </h5>
+                                <button class="btn btn-sm btn-warning favorite-btn" 
+                                        data-document-id="{{ document.id }}" 
+                                        data-is-favorite="true"
+                                        title="Retirer des favoris">
+                                    <i class="bi bi-star-fill me-1"></i>
+                                    Retirer
+                                </button>
+                            </div>
+
+                            {% if document.folder %}
+                                <p class="card-text small text-muted mb-3">
+                                    <i class="bi bi-folder me-1"></i>
+                                    {{ document.folder.name }}
+                                </p>
+                            {% endif %}
+
+                            <div class="d-flex gap-2 mt-3">
+                                {% if document.isPdf %}
+                                    <a href="{{ path('app_document_view', {'id': document.id}) }}" 
+                                       class="btn btn-sm btn-outline-primary flex-grow-1">
+                                        <i class="bi bi-eye me-1"></i>
+                                        Consulter
+                                    </a>
+                                    <a href="{{ path('app_document_download', {'id': document.id}) }}" 
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-download me-1"></i>
+                                        Télécharger
+                                    </a>
+                                {% elseif document.isLink %}
+                                    <a href="{{ document.externalUrl }}" 
+                                       target="_blank" 
+                                       class="btn btn-sm btn-outline-primary flex-grow-1">
+                                        <i class="bi bi-arrow-up-right me-1"></i>
+                                        Ouvrir le lien
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.favorite-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const docId = this.dataset.documentId;
+        
+        fetch(`/favorites/remove/${docId}`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                // Recharger la page pour voir les changements
+                location.reload();
+            })
+            .catch(error => console.error('Erreur:', error));
+    });
+});
+</script>
+{% endblock %}

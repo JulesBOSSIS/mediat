@@ -1,0 +1,131 @@
+/* Styles pour les boutons de collapse des dossiers */
+.btn-collapse {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-right: 5px;
+    color: #6c757d;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: transform 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.btn-collapse[aria-expanded="true"] {
+    transform: rotate(90deg);
+}
+
+.btn-collapse:hover {
+    color: #495057;
+}
+
+/* Lien pour les fichiers */
+.file-link {
+    color: #6c757d;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.file-link:hover {
+    color: #007bff;
+}
+
+.folder-name {
+    flex: 1;
+}
+
+/* Bouton d'affichage du dossier */
+.folder-view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 2px;
+    margin-left: auto;
+    color: #6c757d;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.sidebar-item.folder:hover .folder-view-btn {
+    color: #007bff;
+}
+
+.folder-view-btn:hover {
+    background-color: #e7f1ff;
+    color: #0056b3;
+}
+
+.folder-view-btn i {
+    font-size: 0.9rem;
+}
+
+/* Icône de visualisation du dossier (visuelle uniquement) */
+.folder-view-icon {
+    margin-left: auto;
+    color: #6c757d;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.sidebar-item.folder:hover .folder-view-icon {
+    color: #007bff;
+}
+
+/* Amélioration visuelle des dossiers */
+.sidebar-item.folder {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    border-bottom: 1px solid #f1f1f1;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    color: #495057;
+    text-decoration: none;
+}
+
+.sidebar-item.folder:hover {
+    background-color: #f8f9fa;
+    border-left: 3px solid #007bff;
+    color: #495057;
+    text-decoration: none;
+}
+
+/* Amélioration visuelle des fichiers */
+.sidebar-item.file {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    color: #6c757d;
+}
+
+/* Animation des sous-éléments */
+.collapse {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+    }
+}
+
+/* Indentation progressive avec les marges gauche */
+.sidebar-item[style*="margin-left"] {
+    font-size: 0.9rem;
+}

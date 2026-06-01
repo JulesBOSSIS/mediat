@@ -1,0 +1,163 @@
+{% extends 'admin/admin_base.html.twig' %}
+{% import 'admin/_macros.html.twig' as admin_ui %}
+
+{% block title %}Gestion des commentaires - Admin{% endblock %}
+
+{% block admin_toolbar %}
+    {{ admin_ui.back_bar(path('app_admin'), "Panneau d'administration") }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h1 class="admin-page-title mb-2">
+        <i class="bi bi-chat-dots text-primary me-2"></i>
+        Commentaires
+    </h1>
+    <p class="admin-page-lead text-muted mb-0">Filtrez par période et supprimez si nécessaire.</p>
+</div>
+
+<div class="card admin-card admin-filter-card border-0 shadow-sm mb-4">
+    <div class="card-header py-3 rounded-top">
+        <span class="fw-semibold"><i class="bi bi-funnel me-2"></i>Filtres</span>
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ path('app_admin_list_comments') }}" id="filterForm">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label">Date de début</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" value="{{ startDate ?? '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="startTime" class="form-label">Heure début</label>
+                    <input type="time" class="form-control" id="startTime" name="startTime" value="{{ startTime ?? '00:00' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label">Date de fin</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate" value="{{ endDate ?? '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="endTime" class="form-label">Heure fin</label>
+                    <input type="time" class="form-control" id="endTime" name="endTime" value="{{ endTime ?? '23:59' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="orderBy" class="form-label">Tri</label>
+                    <select class="form-select" id="orderBy" name="orderBy">
+                        <option value="DESC" {{ orderBy == 'DESC' ? 'selected' : '' }}>Plus récent</option>
+                        <option value="ASC" {{ orderBy == 'ASC' ? 'selected' : '' }}>Plus ancien</option>
+                    </select>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-search me-1"></i>Filtrer
+                </button>
+                <a href="{{ path('app_admin_list_comments') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-lg me-1"></i>Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if comments|length > 0 %}
+    <p class="small text-muted mb-2">{{ comments|length }} commentaire{{ comments|length > 1 ? 's' : '' }}</p>
+    <div class="admin-table-wrap card admin-card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Utilisateur</th>
+                        <th scope="col">Document</th>
+                        <th scope="col">Extrait</th>
+                        <th scope="col">Date</th>
+                        <th scope="col" class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in comments %}
+                        <tr>
+                            <td>
+                                <span class="text-break">{{ comment.user ? comment.user.email : '—' }}</span>
+                            </td>
+                            <td>
+                                {% if comment.document %}
+                                    <a href="{{ path('app_document_view', {'id': comment.document.id}) }}" target="_blank" rel="noopener" class="text-decoration-none">
+                                        {{ comment.document.title }}
+                                    </a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-link admin-comment-preview text-start p-0" data-bs-toggle="modal" data-bs-target="#modal-{{ comment.id }}">
+                                    <small class="d-block text-truncate" style="max-width: 280px;">
+                                        {{ comment.content }}
+                                    </small>
+                                </button>
+                            </td>
+                            <td>
+                                <small class="text-muted text-nowrap">{{ comment.createdAt ? comment.createdAt|date('d/m/Y H:i') : '—' }}</small>
+                            </td>
+                            <td class="text-end">
+                                <form method="POST" action="{{ path('app_admin_delete_comment', {'id': comment.id}) }}" class="d-inline" onsubmit="return confirm('Supprimer ce commentaire ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ comment.id) }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash me-1"></i>Supprimer
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-info border-0 shadow-sm mb-0">
+        <i class="bi bi-info-circle me-2"></i>
+        Aucun commentaire pour ces critères.
+    </div>
+{% endif %}
+
+{% for comment in comments %}
+    <div class="modal fade" id="modal-{{ comment.id }}" tabindex="-1" aria-labelledby="modalLabel-{{ comment.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="modalLabel-{{ comment.id }}">
+                        <i class="bi bi-chat-dots me-2"></i>
+                        {{ comment.user ? comment.user.email : '—' }}
+                    </h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        {% if comment.document %}
+                            <strong>Document :</strong>
+                            <a href="{{ path('app_document_view', {'id': comment.document.id}) }}" target="_blank" rel="noopener">{{ comment.document.title }}</a>
+                        {% else %}
+                            <strong>Document :</strong> —
+                        {% endif %}
+                    </p>
+                    <p class="text-muted small mb-3">
+                        <strong>Date :</strong> {{ comment.createdAt ? comment.createdAt|date('d/m/Y H:i') : '—' }}
+                    </p>
+                    <hr>
+                    <div class="bg-light p-3 rounded-3 small">
+                        {{ comment.content|replace({'\n': '<br>'})|raw }}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <form method="POST" action="{{ path('app_admin_delete_comment', {'id': comment.id}) }}" class="d-inline" onsubmit="return confirm('Supprimer ce commentaire ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ comment.id) }}">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-trash me-1"></i>Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+{% endblock %}

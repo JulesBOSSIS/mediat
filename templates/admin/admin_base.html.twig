@@ -1,0 +1,15 @@
+{% extends 'base.html.twig' %}
+
+{# Layout commun administration : shell, flashs, surcharge du bloc body uniquement côté présentation #}
+{% block stylesheets %}
+    {{ parent() }}
+    <link href="{{ asset('css/admin.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+    <div class="admin-shell {% block admin_shell_class %}{% endblock %}">
+        {% block admin_toolbar %}{% endblock %}
+        {% include 'admin/_flashes.html.twig' %}
+        {% block admin_content %}{% endblock %}
+    </div>
+{% endblock %}

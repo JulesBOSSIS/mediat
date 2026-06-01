@@ -1,0 +1,143 @@
+{% extends 'admin/admin_base.html.twig' %}
+{% import 'admin/_macros.html.twig' as admin_ui %}
+
+{% block title %}Consultations — {{ document.title }} - Admin{% endblock %}
+
+{% block admin_toolbar %}
+<div class="admin-toolbar d-flex flex-wrap align-items-center gap-2 mb-3">
+    <a href="{{ path('app_admin_list_documents') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left-short"></i> Liste des documents
+    </a>
+    <a href="{{ path('app_admin_documents_view_stats') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-bar-chart-line me-1"></i>Statistiques globales
+    </a>
+    <a href="{{ path('app_admin_edit_document', { id: document.id }) }}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil me-1"></i>Éditer
+    </a>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="mb-4">
+    <h1 class="admin-page-title mb-2">
+        <i class="bi bi-eye text-primary me-2"></i>
+        Consultations
+    </h1>
+    <p class="text-muted mb-1 text-break fw-semibold">{{ document.title }}</p>
+    <p class="admin-page-lead text-muted mb-0">
+        Ouvertures enregistrées lors de la consultation du PDF. Au plus une vue toutes les 5&nbsp;minutes par utilisateur.
+        Les administrateurs sont exclus des statistiques.
+    </p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card admin-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted small fw-semibold mb-1" style="font-size: 0.65rem; letter-spacing: 0.06em;">Ouvertures (filtre)</div>
+                <div class="fs-4 fw-semibold">{{ totalFiltered }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card admin-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted small fw-semibold mb-1" style="font-size: 0.65rem; letter-spacing: 0.06em;">Lecteurs (filtre)</div>
+                <div class="fs-4 fw-semibold">{{ uniqueUsersFiltered }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card admin-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted small fw-semibold mb-1" style="font-size: 0.65rem; letter-spacing: 0.06em;">Ouvertures (total)</div>
+                <div class="fs-4 fw-semibold text-body-secondary">{{ totalAllTime }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card admin-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-uppercase text-muted small fw-semibold mb-1" style="font-size: 0.65rem; letter-spacing: 0.06em;">Lecteurs (total)</div>
+                <div class="fs-4 fw-semibold text-body-secondary">{{ uniqueAllTime }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card admin-card admin-filter-card border-0 shadow-sm mb-4">
+    <div class="card-header py-3 rounded-top">
+        <span class="fw-semibold"><i class="bi bi-funnel me-2"></i>Filtres</span>
+    </div>
+    <div class="card-body">
+        <form method="get" action="{{ path('app_admin_document_views', { id: document.id }) }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label">Date de début</label>
+                    <input type="date" class="form-control" id="startDate" name="startDate" value="{{ startDate ?? '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="startTime" class="form-label">Heure</label>
+                    <input type="time" class="form-control" id="startTime" name="startTime" value="{{ startTime ?? '00:00' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label">Date de fin</label>
+                    <input type="date" class="form-control" id="endDate" name="endDate" value="{{ endDate ?? '' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="endTime" class="form-label">Heure</label>
+                    <input type="time" class="form-control" id="endTime" name="endTime" value="{{ endTime ?? '23:59' }}">
+                </div>
+                <div class="col-md-12 col-lg-10">
+                    <label for="user" class="form-label">E-mail utilisateur (contient)</label>
+                    <input type="search" class="form-control" id="user" name="user" value="{{ userQuery }}" placeholder="ex. @exemple.fr" autocomplete="off">
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-search me-1"></i>Appliquer
+                </button>
+                <a href="{{ path('app_admin_document_views', { id: document.id }) }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-lg me-1"></i>Réinitialiser
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if byUser is empty %}
+    <div class="alert alert-info border-0 shadow-sm">
+        <i class="bi bi-info-circle me-2"></i>Aucune consultation ne correspond à ces critères.
+    </div>
+{% else %}
+    <div class="admin-table-wrap card admin-card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Utilisateur</th>
+                        <th scope="col" class="text-end">Ouvertures</th>
+                        <th scope="col">Première vue</th>
+                        <th scope="col">Dernière vue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in byUser %}
+                        <tr>
+                            <td>
+                                <span class="text-break">{{ row.email }}</span>
+                                <span class="d-block small text-muted">ID {{ row.userId }}</span>
+                            </td>
+                            <td class="text-end">
+                                <span class="badge text-bg-primary rounded-pill">{{ row.viewCount }}</span>
+                            </td>
+                            <td class="text-nowrap small">{{ row.firstViewedAt|date('d/m/Y H:i') }}</td>
+                            <td class="text-nowrap small">{{ row.lastViewedAt|date('d/m/Y H:i') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

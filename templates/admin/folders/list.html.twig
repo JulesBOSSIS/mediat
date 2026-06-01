@@ -1,0 +1,421 @@
+{% extends 'admin/admin_base.html.twig' %}
+{% import 'admin/_macros.html.twig' as admin_ui %}
+
+{% block title %}Gestion des dossiers - Admin{% endblock %}
+
+{% block admin_toolbar %}
+    {{ admin_ui.back_bar(path('app_admin'), "Panneau d'administration") }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="d-flex flex-column flex-md-row align-items-md-start justify-content-md-between gap-3 mb-4">
+    <div>
+        <h1 class="admin-page-title mb-2">
+            <i class="bi bi-folder2 text-primary me-2"></i>
+            Dossiers
+        </h1>
+        <p class="admin-page-lead text-muted mb-0">Arborescence, droits et import de PDF.</p>
+    </div>
+    <div class="flex-shrink-0">
+        <a href="{{ path('app_admin_create_folder') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-folder-plus me-1"></i>
+            Dossier racine
+        </a>
+    </div>
+</div>
+
+<div class="card admin-card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h2 class="h6 fw-semibold mb-2">
+            <i class="bi bi-cloud-arrow-down text-primary me-2"></i>
+            Importer une arborescence (PDF)
+        </h2>
+        <p class="text-muted small mb-3 mb-md-4">
+            Glissez-déposez un dossier depuis l'explorateur pour recréer l'arborescence et enregistrer les PDF.
+            Seuls les fichiers <strong>.pdf</strong> sont importés.
+            Les <strong>dossiers vides</strong> ne sont visibles qu'avec le glisser-déposer (pas avec « Parcourir »).
+        </p>
+        <div class="row g-3 align-items-end">
+            <div class="col-lg-6">
+                <label class="form-label small text-muted mb-1" for="folder-import-parent">Rattacher sous (optionnel)</label>
+                <select id="folder-import-parent" class="form-select form-select-sm">
+                    <option value="">— Racine du site —</option>
+                    {% for choice in import_parent_folder_choices %}
+                        <option value="{{ choice.id }}">{{ choice.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-6 text-lg-end">
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="folder-import-browse">
+                    <i class="bi bi-folder2-open me-1"></i>Parcourir…
+                </button>
+                <input type="file" id="folder-import-file-input" class="d-none" webkitdirectory multiple>
+            </div>
+        </div>
+        <div
+            id="folder-import-dropzone"
+            class="border border-2 rounded-3 p-4 mt-3 text-center bg-light user-select-none"
+            style="border-style: dashed; cursor: pointer;"
+            tabindex="0"
+            role="region"
+            aria-label="Zone de dépôt : déposer un dossier pour importer son arborescence"
+        >
+            <i class="bi bi-cloud-arrow-down display-6 text-primary d-block mb-2"></i>
+            <span class="fw-semibold d-block">Déposez un dossier ici</span>
+            <span class="small text-muted d-block mt-1">Chrome, Edge ou Firefox recommandés.</span>
+        </div>
+        <p class="small text-muted mt-2 mb-0" id="folder-import-status"></p>
+        <p class="small text-danger mt-1 mb-0 d-none" id="folder-import-error"></p>
+    </div>
+</div>
+
+{% if folders is empty %}
+    <div class="alert alert-info border-0 shadow-sm">
+        Aucun dossier. <a href="{{ path('app_admin_create_folder') }}">Créer un dossier racine</a>.
+    </div>
+{% else %}
+    <div class="card admin-card border-0 shadow-sm">
+        <div class="card-body">
+            {% for folder in folders %}
+                {{ _self.renderFolder(folder) }}
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<div class="mt-4 pt-3 border-top border-opacity-50">
+    <a href="{{ path('app_admin') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left-short"></i> Panneau d'administration
+    </a>
+</div>
+{% endblock %}
+
+{% macro renderFolder(folder) %}
+    <div class="folder-item border-bottom pb-3 mb-3">
+        <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center gap-3">
+            <div>
+                <h2 class="h6 mb-1">
+                    <i class="bi bi-folder text-warning me-2"></i>
+                    {{ folder.name }}
+                </h2>
+                <small class="text-muted">
+                    <code>{{ folder.slug ?? 'N/A' }}</code>
+                    · Position {{ folder.position }}
+                    · Documents <span class="badge rounded-pill text-bg-success bg-opacity-10 text-success-emphasis border border-success-subtle">{{ folder.documents|length }}</span>
+                    · Sous-dossiers <span class="badge rounded-pill text-bg-primary bg-opacity-10 text-primary-emphasis border border-primary-subtle">{{ folder.children|length }}</span>
+                </small>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ path('app_admin_create_folder', {'parentId': folder.id}) }}"
+                   class="btn btn-sm btn-outline-secondary"
+                   title="Créer un sous-dossier">
+                    <i class="bi bi-folder-plus me-1"></i>Sous-dossier
+                </a>
+                <a href="{{ path('app_admin_edit_folder', {'id': folder.id}) }}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil me-1"></i>Éditer
+                </a>
+                <form action="{{ path('app_admin_delete_folder', {'id': folder.id}) }}" method="POST" class="d-inline" onsubmit="return confirm('Supprimer ce dossier ?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ folder.id) }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Supprimer
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if folder.children|length > 0 %}
+            <div class="ms-md-4 mt-3 border-start ps-md-3 ps-2">
+                {% for child in folder.children %}
+                    {{ _self.renderFolder(child) }}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endmacro %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+(function () {
+    const IMPORT_URL = "{{ path('app_admin_import_folder_tree')|e('js') }}";
+    const CSRF = "{{ csrf_token('import_folder_tree')|e('js') }}";
+
+    const dropzone = document.getElementById('folder-import-dropzone');
+    const statusEl = document.getElementById('folder-import-status');
+    const errorEl = document.getElementById('folder-import-error');
+    const browseBtn = document.getElementById('folder-import-browse');
+    const fileInput = document.getElementById('folder-import-file-input');
+    const parentSelect = document.getElementById('folder-import-parent');
+
+    if (!dropzone || !statusEl || !errorEl) {
+        return;
+    }
+
+    function setBusy(busy) {
+        dropzone.style.pointerEvents = busy ? 'none' : '';
+        dropzone.setAttribute('aria-busy', busy ? 'true' : 'false');
+        if (browseBtn) browseBtn.disabled = busy;
+        if (fileInput) fileInput.disabled = busy;
+        if (parentSelect) parentSelect.disabled = busy;
+    }
+
+    function showError(msg) {
+        errorEl.textContent = msg || '';
+        errorEl.classList.toggle('d-none', !msg);
+    }
+
+    function setStatus(msg) {
+        statusEl.textContent = msg || '';
+    }
+
+    function joinPath(parent, name) {
+        return parent ? parent + '/' + name : name;
+    }
+
+    function readAllDirectoryEntries(reader) {
+        return new Promise(function (resolve, reject) {
+            var all = [];
+            function readBatch() {
+                reader.readEntries(function (entries) {
+                    if (!entries.length) {
+                        resolve(all);
+                        return;
+                    }
+                    for (var i = 0; i < entries.length; i++) {
+                        all.push(entries[i]);
+                    }
+                    readBatch();
+                }, reject);
+            }
+            readBatch();
+        });
+    }
+
+    function comparePath(a, b) {
+        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    }
+
+    async function traverseDirectoryEntry(entry, parentPath, foldersSet, pdfEntries, skippedFiles) {
+        var path = joinPath(parentPath, entry.name);
+        foldersSet.add(path);
+        var reader = entry.createReader();
+        var entries = await readAllDirectoryEntries(reader);
+        entries.sort(function (a, b) { return comparePath(a.name, b.name); });
+        for (var i = 0; i < entries.length; i++) {
+            var child = entries[i];
+            if (child.isDirectory) {
+                await traverseDirectoryEntry(child, path, foldersSet, pdfEntries, skippedFiles);
+            } else if (child.isFile) {
+                await new Promise(function (resolve, reject) {
+                    child.file(function (file) {
+                        var relPath = joinPath(path, file.name).replace(/\\/g, '/');
+                        if (file.name.toLowerCase().endsWith('.pdf')) {
+                            pdfEntries.push({ relativePath: relPath, file: file, title: file.name });
+                        } else {
+                            skippedFiles.push(relPath);
+                        }
+                        resolve();
+                    }, reject);
+                });
+            }
+        }
+    }
+
+    function ingestFileList(fileList, foldersSet, pdfEntries, skippedFiles) {
+        var arr = Array.prototype.slice.call(fileList || []);
+        for (var i = 0; i < arr.length; i++) {
+            var file = arr[i];
+            var rel = (file.webkitRelativePath || file.name || '').replace(/\\/g, '/');
+            if (!rel) continue;
+            var parts = rel.split('/');
+            for (var j = 0; j < parts.length - 1; j++) {
+                foldersSet.add(parts.slice(0, j + 1).join('/'));
+            }
+            var leaf = parts[parts.length - 1];
+            if (!leaf.toLowerCase().endsWith('.pdf')) {
+                skippedFiles.push(rel);
+                continue;
+            }
+            pdfEntries.push({ relativePath: rel, file: file, title: leaf });
+        }
+    }
+
+    async function collectFromDataTransfer(dt) {
+        var foldersSet = new Set();
+        var pdfEntries = [];
+        var skippedFiles = [];
+        var usedDirApi = false;
+        var items = dt && dt.items ? Array.prototype.slice.call(dt.items) : [];
+
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
+            var entry = typeof item.webkitGetAsEntry === 'function' ? item.webkitGetAsEntry.call(item) : null;
+            if (!entry) continue;
+            if (entry.isDirectory) {
+                usedDirApi = true;
+                await traverseDirectoryEntry(entry, '', foldersSet, pdfEntries, skippedFiles);
+            }
+        }
+
+        if (!usedDirApi && dt && dt.files && dt.files.length) {
+            ingestFileList(dt.files, foldersSet, pdfEntries, skippedFiles);
+        }
+
+        return { foldersSet: foldersSet, pdfEntries: pdfEntries, skippedFiles: skippedFiles };
+    }
+
+    function sortedFolderList(foldersSet) {
+        var folders;
+        if (foldersSet instanceof Set) {
+            folders = Array.from(foldersSet);
+        } else if (Array.isArray(foldersSet)) {
+            folders = foldersSet.slice();
+        } else {
+            folders = Array.prototype.slice.call(foldersSet);
+        }
+        folders.sort(function (a, b) {
+            var da = a.split('/').length;
+            var db = b.split('/').length;
+            if (da !== db) return da - db;
+            return comparePath(a, b);
+        });
+        return folders;
+    }
+
+    function mergeFolderPathsFromPdfEntries(foldersSet, pdfEntries) {
+        for (var i = 0; i < pdfEntries.length; i++) {
+            var norm = (pdfEntries[i].relativePath || '').replace(/\\/g, '/');
+            var parts = norm.split('/');
+            for (var j = 0; j < parts.length - 1; j++) {
+                foldersSet.add(parts.slice(0, j + 1).join('/'));
+            }
+        }
+    }
+
+    async function postImport(pdfEntries, foldersInput, skippedCount) {
+        showError('');
+        var folderSet = foldersInput instanceof Set ? foldersInput : new Set(foldersInput || []);
+        mergeFolderPathsFromPdfEntries(folderSet, pdfEntries);
+        var foldersArray = sortedFolderList(folderSet);
+        if (!foldersArray.length && !pdfEntries.length) {
+            showError('Aucun dossier ou PDF détecté.');
+            return;
+        }
+
+        var ordered = pdfEntries.slice().sort(function (a, b) {
+            return comparePath(a.relativePath, b.relativePath);
+        });
+
+        var folderCount = foldersArray.length;
+        var pdfCount = ordered.length;
+        var skipPart = skippedCount ? skippedCount + ' fichier(s) non-PDF seront ignorés.\n\n' : '';
+        var parentNote = parentSelect && parentSelect.value
+            ? 'Emplacement : sous le dossier sélectionné dans la liste.\n\n'
+            : 'Emplacement : racine du site (nouveaux dossiers racine).\n\n';
+        var confirmMsg = skipPart + parentNote +
+            'Importer maintenant ' + folderCount + ' dossier(s) et ' + pdfCount + ' PDF ?\n\n' +
+            'Les dossiers et fichiers seront enregistrés tout de suite en base. Cette interface ne propose pas d’annulation automatique.';
+
+        if (!window.confirm(confirmMsg)) {
+            setStatus('Import annulé.');
+            return;
+        }
+
+        var manifest = {
+            folders: foldersArray,
+            files: ordered.map(function (x) {
+                return { path: x.relativePath, title: x.title };
+            })
+        };
+
+        var fd = new FormData();
+        fd.append('_token', CSRF);
+        fd.append('manifest', JSON.stringify(manifest));
+        if (parentSelect && parentSelect.value) {
+            fd.append('parent_folder_id', parentSelect.value);
+        }
+        ordered.forEach(function (x) {
+            fd.append('pdfs', x.file);
+        });
+
+        setBusy(true);
+        var skipMsg = skippedCount ? skippedCount + ' fichier(s) non-PDF ignoré(s). ' : '';
+        setStatus(skipMsg + 'Envoi en cours…');
+
+        try {
+            var res = await fetch(IMPORT_URL, {
+                method: 'POST',
+                body: fd,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin'
+            });
+            var data = null;
+            try {
+                data = await res.json();
+            } catch (e) {
+                data = null;
+            }
+            if (!res.ok || !data || !data.ok) {
+                var err = (data && data.error) ? data.error : ('Erreur HTTP ' + res.status);
+                showError(err);
+                setStatus('');
+                return;
+            }
+            var okMsg = 'Import terminé : ' + data.foldersCreated + ' dossier(s), ' + data.documentsCreated + ' PDF.';
+            if (skippedCount) okMsg += ' ' + skippedCount + ' autre(s) fichier(s) ignoré(s).';
+            setStatus(okMsg);
+            window.setTimeout(function () { window.location.reload(); }, 900);
+        } catch (e) {
+            showError('Échec réseau pendant l’import.');
+            setStatus('');
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    dropzone.addEventListener('dragenter', function (e) {
+        e.preventDefault();
+        dropzone.classList.add('bg-white');
+    });
+    dropzone.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        dropzone.classList.add('bg-white');
+    });
+    dropzone.addEventListener('dragleave', function () {
+        dropzone.classList.remove('bg-white');
+    });
+    dropzone.addEventListener('drop', async function (e) {
+        e.preventDefault();
+        dropzone.classList.remove('bg-white');
+        try {
+            var dt = e.dataTransfer;
+            var collected = await collectFromDataTransfer(dt);
+            await postImport(collected.pdfEntries, collected.foldersSet, collected.skippedFiles.length);
+        } catch (err) {
+            showError('Impossible de lire ce dossier. Essayez un autre navigateur ou utilisez « Parcourir ».');
+            setStatus('');
+        }
+    });
+
+    dropzone.addEventListener('click', function () {
+        if (fileInput) fileInput.click();
+    });
+
+    if (browseBtn && fileInput) {
+        browseBtn.addEventListener('click', function () {
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', async function () {
+            showError('');
+            var foldersSet = new Set();
+            var pdfEntries = [];
+            var skippedFiles = [];
+            ingestFileList(fileInput.files, foldersSet, pdfEntries, skippedFiles);
+            setStatus('Les dossiers vides ne sont pas visibles via « Parcourir » ; préférez le glisser-déposer pour une copie fidèle.');
+            await postImport(pdfEntries, foldersSet, skippedFiles.length);
+            fileInput.value = '';
+        });
+    }
+})();
+</script>
+{% endblock %}

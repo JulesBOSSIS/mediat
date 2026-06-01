@@ -1,0 +1,698 @@
+{% extends "base.html.twig" %}
+
+{% block title %}{{ document.title }} - MediaT{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .document-view-page {
+            --document-viewer-min-h: min(72vh, 900px);
+        }
+        .document-chrome {
+            border-radius: 0.75rem;
+        }
+        .document-chrome .document-title {
+            font-size: clamp(1.05rem, 2.5vw, 1.35rem);
+            font-weight: 600;
+            line-height: 1.3;
+            letter-spacing: -0.01em;
+        }
+        .document-viewer-stage {
+            min-height: var(--document-viewer-min-h);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(var(--bs-secondary-rgb), 0.08) 0%, rgba(var(--bs-secondary-rgb), 0.14) 100%);
+            border: 1px solid var(--bs-border-color);
+        }
+        .document-viewer-stage .document-pdf-frame {
+            display: block;
+            width: 100%;
+            min-height: var(--document-viewer-min-h);
+            height: var(--document-viewer-min-h);
+            border: 0;
+            background: #2b2b2b;
+        }
+        .document-viewer-stage .document-image-preview {
+            max-height: min(72vh, 900px);
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        .document-comments-panel {
+            border-radius: 0.75rem;
+            border: 1px solid var(--bs-border-color);
+            background: var(--bs-body-bg);
+            box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.04);
+        }
+        .document-comments-panel .panel-accent {
+            width: 4px;
+            border-radius: 0.75rem 0 0 0.75rem;
+            background: linear-gradient(180deg, var(--bs-primary) 0%, rgba(var(--bs-primary-rgb), 0.55) 100%);
+        }
+        .rating-widget.rating-widget--inline {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            background: rgba(var(--bs-secondary-rgb), 0.08);
+        }
+        @media (max-width: 991.98px) {
+            .document-view-page {
+                --document-viewer-min-h: min(65vh, 720px);
+            }
+        }
+        #commentaires {
+            scroll-margin-top: 5.5rem;
+        }
+        /* Fil de discussion : dense, indentation plafonnée, une barre par message */
+        #commentsList {
+            --comment-rail: rgba(var(--bs-primary-rgb), 0.42);
+            --comment-nested-bg: rgba(var(--bs-secondary-rgb), 0.06);
+        }
+        .comment-node--root {
+            border-radius: 0.75rem;
+        }
+        .comment-node--root .card-body {
+            padding: 0.875rem 1rem;
+        }
+        .comment-node--nested {
+            position: relative;
+            margin-left: min(calc(var(--depth, 1) * 0.55rem), 2.75rem);
+            padding: 0.35rem 0.45rem 0.45rem 0.6rem;
+            border-radius: 0 0.4rem 0.4rem 0;
+            background: var(--comment-nested-bg);
+            border: 1px solid var(--bs-border-color);
+            border-left: 2px solid var(--comment-rail);
+        }
+        .comment-node__author {
+            font-size: 0.8rem;
+            line-height: 1.25;
+        }
+        .comment-node__meta-row {
+            font-size: 0.72rem;
+            letter-spacing: 0.01em;
+        }
+        .comment-node__text {
+            line-height: 1.45;
+            word-break: break-word;
+        }
+        .comment-node--root .comment-node__text {
+            font-size: 0.95rem;
+        }
+        .comment-node--nested .comment-node__text {
+            font-size: 0.8125rem;
+            margin-bottom: 0.35rem !important;
+        }
+        .comment-node__replies {
+            margin-top: 0.35rem;
+        }
+        .comment-reply-toolbar {
+            margin-top: 0.35rem;
+            padding-top: 0.35rem;
+            border-top: 1px solid var(--bs-border-color);
+        }
+        .comment-node--nested .comment-reply-toolbar {
+            margin-top: 0.25rem;
+            padding-top: 0.25rem;
+        }
+        .comment-reply-form textarea {
+            font-size: 0.8125rem;
+        }
+        .btn-comment-reply {
+            font-size: 0.78rem;
+            padding: 0.15rem 0.35rem;
+        }
+        .btn-comment-reply--ghost {
+            padding: 0;
+            min-height: auto;
+            line-height: 1.2;
+            vertical-align: baseline;
+        }
+    </style>
+{% endblock %}
+
+{% block body %}
+{% set download_url = path('app_document_download', {'id': document.id}) %}
+<div class="document-view-page container-fluid px-3 px-lg-4 py-3">
+    <div class="document-chrome card border-0 shadow-sm mb-3">
+        <div class="card-body py-3 px-3 px-md-4">
+            <div class="d-flex flex-column flex-xl-row gap-3 align-items-stretch align-items-xl-center">
+                <div class="flex-grow-1 min-w-0">
+                    <h1 class="document-title mb-6 text-break" title="{{ document.title }}">{{ document.title }}</h1>
+                    {% if document.folder %}
+                        <span class="badge rounded-pill text-bg-light border fw-normal">
+                            <i class="bi bi-folder2-open me-1"></i>{{ document.folder.name }}
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2" data-tour="tour-document-actions">
+                    <div class="btn-group flex-shrink-0" role="group" aria-label="Actions document">
+                        <button type="button"
+                                class="btn {% if isFavorite %}btn-warning{% else %}btn-outline-warning{% endif %} favorite-btn"
+                                id="favoriteBtn"
+                                data-document-id="{{ document.id }}"
+                                data-is-favorite="{{ isFavorite ? 'true' : 'false' }}"
+                                title="{{ isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris' }}">
+                            <i class="bi bi-star{% if isFavorite %}-fill{% endif %}"></i>
+                            <span class="d-none d-sm-inline ms-1">Favoris</span>
+                        </button>
+                        <a href="{{ path('app_accueil') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-house"></i>
+                            <span class="d-none d-sm-inline ms-1">Accueil</span>
+                        </a>
+                        {% if document.documentType == 'file' and document.mimeType starts with 'image/' %}
+                            <a href="{{ download_url }}" class="btn btn-primary" download>
+                                <i class="bi bi-download"></i>
+                                <span class="d-none d-sm-inline ms-1">Télécharger</span>
+                            </a>
+                        {% elseif document.documentType == 'file' and document.mimeType == 'application/pdf' %}
+                            <a href="{{ download_url }}" class="btn btn-primary" download>
+                                <i class="bi bi-download"></i>
+                                <span class="d-none d-sm-inline ms-1">PDF</span>
+                            </a>
+                        {% elseif document.documentType == 'file' %}
+                            <a href="{{ download_url }}" class="btn btn-primary" download>
+                                <i class="bi bi-download"></i>
+                                <span class="d-none d-sm-inline ms-1">Télécharger</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                    <a href="#commentaires" class="btn btn-outline-primary flex-shrink-0">
+                        <i class="bi bi-chat-text"></i>
+                        <span class="d-none d-sm-inline ms-1">Commentaires</span>
+                    </a>
+                    <div class="rating-widget rating-widget--inline flex-shrink-0" data-document-id="{{ document.id }}" data-tour="tour-document-rating">
+                        <div class="d-flex flex-column flex-sm-row align-items-center gap-2 gap-sm-3">
+                            <div class="text-center text-sm-start">
+                                <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.06em;">Votre note</div>
+                                <div class="stars lh-1" style="cursor: pointer; font-size: 1.1rem; letter-spacing: 2px;">
+                                    {% for i in 1..5 %}
+                                        <span class="star" data-score="{{ i }}" style="color: #ddd; cursor: pointer;">★</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="vr d-none d-sm-block align-self-stretch my-1 opacity-25"></div>
+                            <div class="text-center text-sm-start">
+                                <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.06em;">Moyenne</div>
+                                <div class="d-flex align-items-center justify-content-center justify-content-sm-start gap-1">
+                                    <span class="avg-rating fw-bold" style="font-size: 1rem;">-</span>
+                                    <span class="text-warning" style="font-size: 1rem;">★</span>
+                                    <span class="text-muted small">(<span class="total-ratings">0</span>)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="document-content">
+                {% if document.documentType == 'file' %}
+                    <!-- Affichage selon le type MIME -->
+                    {% if document.mimeType starts with 'image/' %}
+                        <div class="document-viewer-stage d-flex align-items-center justify-content-center p-2 p-md-3 mb-4">
+                            <img src="{{ download_url }}" class="document-image-preview rounded shadow-sm" alt="{{ document.title }}">
+                        </div>
+                    {% elseif document.mimeType == 'application/pdf' %}
+                        <div class="document-viewer-stage mb-4">
+                            <iframe src="{{ download_url }}" class="document-pdf-frame" title="Aperçu PDF — {{ document.title }}"></iframe>
+                        </div>
+                    {% else %}
+                        <!-- Pour tous les autres types (DOCX, XLSX, etc.) -->
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Ce type de fichier ne peut pas être affiché dans le navigateur.
+                        </div>
+                        <div class="mb-3">
+                            <a href="{{ download_url }}" class="btn btn-primary btn-lg" download>
+                                <i class="bi bi-download me-2"></i>Télécharger le fichier
+                            </a>
+                        </div>
+                    {% endif %}
+                    
+                {% elseif document.documentType == 'link' %}
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-link-45deg me-2"></i>
+                        <strong>Document externe</strong><br>
+                        Ce document est un lien vers une ressource externe.
+                    </div>
+                    <div class="mb-3">
+                        <a href="{{ document.path }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-up-right me-2"></i>Ouvrir le lien
+                        </a>
+                    </div>
+                    <p class="text-muted">
+                        <small>URL: <code>{{ document.path }}</code></small>
+                    </p>
+                {% else %}
+                    <div class="alert alert-secondary">
+                        Type de document non supporté
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if document.externalVideoUrl %}
+                <div id="didacticiel-section" class="didacticiel-section mt-4 mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex align-items-center justify-content-center" style="width: 2.25rem; height: 2.25rem;">
+                            <i class="bi bi-play-circle-fill"></i>
+                        </span>
+                        <h2 class="h5 mb-0 fw-semibold">Didacticiel</h2>
+                    </div>
+                    <div class="card border-0 shadow-sm overflow-hidden">
+                        <div class="card-body p-0">
+                            <video
+                                src="/uploads/videos/{{ document.externalVideoUrl }}"
+                                controls
+                                class="w-100"
+                                style="max-width: 100%; height: auto; max-height: 500px;"
+                                controlsList="nodownload">
+                                <p class="text-muted p-3 mb-0">
+                                    Votre navigateur ne supporte pas la lecture vidéo.
+                                </p>
+                            </video>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div id="commentaires" class="document-comments-panel d-flex overflow-hidden mt-4" data-tour="tour-document-comments">
+                <div class="panel-accent flex-shrink-0" aria-hidden="true"></div>
+                <div class="flex-grow-1 p-3 p-md-4">
+                    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-2 mb-3">
+                        <div>
+                            <h2 class="h5 mb-1 fw-semibold d-flex align-items-center gap-2">
+                                <i class="bi bi-chat-square-text text-primary"></i>
+                                Discussion
+                            </h2>
+                            <p class="text-muted small mb-0">Retours, questions et notes sur ce document.</p>
+                        </div>
+                        <span id="commentCountBadge" class="badge rounded-pill bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 align-self-start">
+                            Aucun commentaire
+                        </span>
+                    </div>
+
+                    <div class="card border bg-body-tertiary bg-opacity-50 mb-4">
+                        <div class="card-body p-3 p-md-4">
+                            <form id="commentForm" data-document-id="{{ document.id }}">
+                                <label for="commentContent" class="form-label fw-semibold">Votre message</label>
+                                <textarea class="form-control form-control-lg shadow-sm" id="commentContent" rows="3" placeholder="Partagez votre avis sur ce document…" maxlength="5000" required></textarea>
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mt-2">
+                                    <small class="text-muted">
+                                        <span id="charCount">0</span> / 5000 caractères
+                                    </small>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-send-fill me-2"></i>Publier
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div id="commentSuccess" class="alert alert-success alert-dismissible fade show mt-3" style="display: none;" role="alert">
+                                <i class="bi bi-check-circle me-2"></i>
+                                <strong>Merci !</strong> Votre commentaire a été enregistré avec succès et est visible dans votre profil.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                            </div>
+
+                            <div id="commentError" class="alert alert-danger alert-dismissible fade show mt-3" style="display: none;" role="alert">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <span id="errorMessage"></span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="commentsDisplay">
+                        <h3 class="h6 text-uppercase text-muted fw-semibold mb-3" style="font-size: 0.7rem; letter-spacing: 0.08em;">Fil de discussion</h3>
+                        <div id="commentsList">
+                        </div>
+                    </div>
+                </div>
+            </div>
+</div>
+
+<script>
+// Gérer le bouton favoris
+const favoriteBtn = document.getElementById('favoriteBtn');
+if (favoriteBtn) {
+    favoriteBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const docId = this.dataset.documentId;
+        const isFavorite = this.dataset.isFavorite === 'true';
+        
+        const url = isFavorite 
+            ? `/favorites/remove/${docId}`
+            : `/favorites/add/${docId}`;
+        
+        fetch(url, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                // Recharger la page
+                location.reload();
+            })
+            .catch(error => console.error('Erreur:', error));
+    });
+}
+
+// Gérer les notations
+document.querySelectorAll('.rating-widget').forEach(widget => {
+    const docId = widget.dataset.documentId;
+    const starsContainer = widget.querySelector('.stars');
+    const stars = widget.querySelectorAll('.star');
+    const avgRating = widget.querySelector('.avg-rating');
+    const totalRatings = widget.querySelector('.total-ratings');
+    
+    // Charger les notes existantes
+    fetch(`/ratings/document/${docId}`)
+        .then(response => response.json())
+        .then(data => {
+            avgRating.textContent = data.average > 0 ? data.average.toFixed(1) : '-';
+            totalRatings.textContent = data.total;
+            
+            // Mettre à jour l'affichage des étoiles si l'utilisateur a déjà noté
+            if (data.userRating) {
+                updateStarDisplay(data.userRating);
+            }
+        });
+    
+    // Ajouter les écouteurs aux étoiles
+    stars.forEach(star => {
+        star.addEventListener('click', function(e) {
+            e.preventDefault();
+            const score = parseInt(this.dataset.score);
+            
+            const formData = new FormData();
+            formData.append('score', score);
+            
+            fetch(`/ratings/rate/${docId}`, {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    avgRating.textContent = data.average > 0 ? data.average.toFixed(1) : '-';
+                    totalRatings.textContent = data.total;
+                    updateStarDisplay(score);
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+        });
+        
+        // Effets visuels au survol
+        star.addEventListener('mouseover', function() {
+            const score = parseInt(this.dataset.score);
+            stars.forEach(s => {
+                if (parseInt(s.dataset.score) <= score) {
+                    s.style.color = '#ffc107';
+                } else {
+                    s.style.color = '#ddd';
+                }
+            });
+        });
+    });
+    
+    starsContainer.addEventListener('mouseleave', function() {
+        // Recharger les notes pour restaurer l'affichage
+        fetch(`/ratings/document/${docId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.userRating) {
+                    updateStarDisplay(data.userRating);
+                } else {
+                    stars.forEach(s => s.style.color = '#ddd');
+                }
+            });
+    });
+    
+    function updateStarDisplay(score) {
+        stars.forEach(star => {
+            if (parseInt(star.dataset.score) <= score) {
+                star.style.color = '#ffc107';
+            } else {
+                star.style.color = '#ddd';
+            }
+        });
+    }
+});
+
+// Gérer les commentaires
+const commentForm = document.getElementById('commentForm');
+const commentContent = document.getElementById('commentContent');
+const charCount = document.getElementById('charCount');
+const commentSuccess = document.getElementById('commentSuccess');
+const commentError = document.getElementById('commentError');
+const errorMessage = document.getElementById('errorMessage');
+
+const docId = commentForm.dataset.documentId;
+
+function formatCommentBadgeLabel(totalCount) {
+    if (totalCount === 0) return 'Aucun commentaire';
+    if (totalCount === 1) return '1 message';
+    return `${totalCount} messages`;
+}
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+function buildCommentNodeHtml(comment, depth) {
+    const isNested = depth > 0;
+    const depthForIndent = Math.min(depth, 5);
+    const depthStyle = isNested ? ' style="--depth: ' + depthForIndent + '"' : '';
+    const authorHtml = escapeHtml(comment.author);
+    const dateHtml = escapeHtml(comment.createdAt);
+    const contentHtml = escapeHtml(comment.content).replace(/\n/g, '<br>');
+
+    const deleteBtn = comment.isOwner
+        ? (isNested
+            ? '<button type="button" class="btn btn-link btn-sm text-danger p-0 delete-comment-btn" title="Supprimer" data-comment-id="' + comment.id + '" aria-label="Supprimer"><i class="bi bi-trash"></i></button>'
+            : '<button type="button" class="btn btn-sm btn-outline-danger delete-comment-btn" data-comment-id="' + comment.id + '"><i class="bi bi-trash me-1"></i>Supprimer</button>')
+        : '';
+
+    const replyBtnClass = isNested
+        ? 'btn btn-link btn-sm text-primary p-0 text-decoration-none reply-comment-btn btn-comment-reply btn-comment-reply--ghost'
+        : 'btn btn-sm btn-outline-primary reply-comment-btn btn-comment-reply';
+
+    let replyFormHtml = '';
+    if (document.body.classList.contains('is-user')) {
+        replyFormHtml =
+            '<div class="comment-reply-toolbar">' +
+                '<button type="button" class="' + replyBtnClass + '" data-comment-id="' + comment.id + '">' +
+                    '<i class="bi bi-reply-fill me-1"></i>Répondre' +
+                '</button>' +
+                '<div class="reply-form-' + comment.id + ' comment-reply-form mt-2" style="display: none;">' +
+                    '<textarea class="form-control form-control-sm mb-2 reply-content" rows="2" placeholder="Votre réponse…" data-comment-id="' + comment.id + '" maxlength="5000"></textarea>' +
+                    '<div class="d-flex flex-wrap gap-2">' +
+                        '<button type="button" class="btn btn-sm btn-primary send-reply-btn py-1" data-comment-id="' + comment.id + '">' +
+                            '<i class="bi bi-send me-1"></i>Envoyer' +
+                        '</button>' +
+                        '<button type="button" class="btn btn-sm btn-outline-secondary cancel-reply-btn py-1" data-comment-id="' + comment.id + '">' +
+                            'Annuler' +
+                        '</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+    }
+
+    const children = (comment.replies || []).map(function (r) { return buildCommentNodeHtml(r, depth + 1); }).join('');
+    const childrenWrap = children ? '<div class="comment-node__replies">' + children + '</div>' : '';
+
+    if (!isNested) {
+        return (
+            '<article class="comment-node comment-node--root card border-0 shadow-sm mb-3" data-comment-depth="0">' +
+            '<div class="card-body">' +
+                '<div class="d-flex justify-content-between align-items-start gap-2 mb-2">' +
+                    '<div class="min-w-0">' +
+                        '<div class="comment-node__author fw-semibold mb-0">' +
+                            '<i class="bi bi-person-circle me-1 text-primary"></i>' +
+                            '<span class="text-break">' + authorHtml + '</span>' +
+                        '</div>' +
+                        '<div class="comment-node__meta-row text-muted mt-1">' + dateHtml + '</div>' +
+                    '</div>' +
+                    deleteBtn +
+                '</div>' +
+                '<p class="comment-node__text mb-0">' + contentHtml + '</p>' +
+                childrenWrap +
+                replyFormHtml +
+            '</div>' +
+        '</article>'
+        );
+    }
+
+    return (
+        '<article class="comment-node comment-node--nested mb-2"' + depthStyle + ' data-comment-depth="' + depthForIndent + '">' +
+            '<div class="d-flex justify-content-between align-items-start gap-2">' +
+                '<div class="min-w-0 flex-grow-1">' +
+                    '<div class="comment-node__meta-row text-muted d-flex flex-wrap align-items-baseline column-gap-2 row-gap-0">' +
+                        '<span class="comment-node__author fw-semibold text-body">' + authorHtml + '</span>' +
+                        '<span>' + dateHtml + '</span>' +
+                    '</div>' +
+                    '<div class="comment-node__text mt-1">' + contentHtml + '</div>' +
+                '</div>' +
+                (deleteBtn ? '<div class="flex-shrink-0 pt-0">' + deleteBtn + '</div>' : '') +
+            '</div>' +
+            childrenWrap +
+            replyFormHtml +
+        '</article>'
+    );
+}
+
+function countCommentsRecursive(nodes) {
+    if (!nodes || !nodes.length) return 0;
+    var total = 0;
+    nodes.forEach(function (c) {
+        total += 1 + countCommentsRecursive(c.replies || []);
+    });
+    return total;
+}
+
+function bindCommentsListDelegation(commentsList) {
+    if (!commentsList || commentsList.dataset.delegationBound === '1') return;
+    commentsList.dataset.delegationBound = '1';
+
+    commentsList.addEventListener('click', function (e) {
+        var delBtn = e.target.closest('.delete-comment-btn');
+        if (delBtn) {
+            var commentId = delBtn.dataset.commentId;
+            if (!commentId || !confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) return;
+            fetch('/comments/delete/' + commentId, { method: 'POST' })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) loadComments();
+                })
+                .catch(function (err) { console.error(err); });
+            return;
+        }
+
+        var replyBtn = e.target.closest('.reply-comment-btn');
+        if (replyBtn) {
+            var rid = replyBtn.dataset.commentId;
+            var form = commentsList.querySelector('.reply-form-' + rid);
+            if (!form) return;
+            if (form.style.display === 'none' || !form.style.display) {
+                form.style.display = 'block';
+                replyBtn.innerHTML = '<i class="bi bi-chevron-up me-1"></i>Masquer';
+            } else {
+                form.style.display = 'none';
+                replyBtn.innerHTML = '<i class="bi bi-reply-fill me-1"></i>Répondre';
+            }
+            return;
+        }
+
+        var sendBtn = e.target.closest('.send-reply-btn');
+        if (sendBtn) {
+            var sid = sendBtn.dataset.commentId;
+            var textarea = commentsList.querySelector('.reply-form-' + sid + ' .reply-content');
+            var content = textarea && textarea.value.trim();
+            if (!content) {
+                alert('La réponse ne peut pas être vide');
+                return;
+            }
+            var formData = new FormData();
+            formData.append('content', content);
+            fetch('/comments/reply/' + sid, { method: 'POST', body: formData })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) loadComments();
+                    else alert(data.error || 'Erreur lors de l’envoi de la réponse');
+                })
+                .catch(function () { alert('Erreur de connexion'); });
+            return;
+        }
+
+        var cancelBtn = e.target.closest('.cancel-reply-btn');
+        if (cancelBtn) {
+            var cid = cancelBtn.dataset.commentId;
+            var formEl = commentsList.querySelector('.reply-form-' + cid);
+            var ta = commentsList.querySelector('.reply-form-' + cid + ' .reply-content');
+            var toggleBtn = commentsList.querySelector('.reply-comment-btn[data-comment-id="' + cid + '"]');
+            if (formEl) formEl.style.display = 'none';
+            if (ta) ta.value = '';
+            if (toggleBtn) toggleBtn.innerHTML = '<i class="bi bi-reply-fill me-1"></i>Répondre';
+        }
+    });
+}
+
+// Mettre à jour le compteur de caractères
+commentContent.addEventListener('input', function() {
+    charCount.textContent = this.value.length;
+});
+
+// Soumettre un nouveau commentaire
+commentForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const content = commentContent.value;
+    const formData = new FormData();
+    formData.append('content', content);
+
+    fetch(`/comments/add/${docId}`, {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Afficher le message de succès
+            commentSuccess.style.display = 'block';
+            commentError.style.display = 'none';
+            commentContent.value = '';
+            charCount.textContent = '0';
+
+            // Recharger les commentaires
+            loadComments();
+
+            // Masquer le message après 4 secondes
+            setTimeout(() => {
+                commentSuccess.style.display = 'none';
+            }, 4000);
+        } else {
+            errorMessage.textContent = data.error || 'Une erreur est survenue';
+            commentError.style.display = 'block';
+            commentSuccess.style.display = 'none';
+        }
+    })
+    .catch(error => {
+        errorMessage.textContent = 'Erreur de connexion';
+        commentError.style.display = 'block';
+        commentSuccess.style.display = 'none';
+    });
+});
+
+// Charger et afficher les commentaires
+function loadComments() {
+    fetch(`/comments/document/${docId}`)
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            var commentsList = document.getElementById('commentsList');
+            var commentCountBadge = document.getElementById('commentCountBadge');
+            bindCommentsListDelegation(commentsList);
+
+            var total = typeof data.totalCommentCount === 'number'
+                ? data.totalCommentCount
+                : countCommentsRecursive(data.comments || []);
+            if (commentCountBadge) {
+                commentCountBadge.textContent = formatCommentBadgeLabel(total);
+            }
+
+            var roots = data.comments || [];
+            if (total === 0 || roots.length === 0) {
+                commentsList.innerHTML =
+                    '<div class="text-center text-muted py-4 px-3 rounded-3 border border-dashed bg-body-secondary bg-opacity-25">' +
+                    '<i class="bi bi-chat-quote d-block fs-2 mb-2 opacity-50"></i>' +
+                    '<p class="mb-0 small">Soyez le premier à partager un retour sur ce document.</p>' +
+                    '</div>';
+                return;
+            }
+
+            commentsList.innerHTML = roots.map(function (c) { return buildCommentNodeHtml(c, 0); }).join('');
+        })
+        .catch(function (error) { console.error('Erreur lors du chargement des commentaires:', error); });
+}
+// Charger les commentaires au chargement de la page
+loadComments();
+</script>
+
+{% endblock %}

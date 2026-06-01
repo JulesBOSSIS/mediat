@@ -1,0 +1,20 @@
+{# Rôles dossier : checkbox Bootstrap imbrique label + input ; un second form_label vide cassait l'affichage.
+   On rend une case simple + libellé explicite (cohérent avec form-check Bootstrap). #}
+{% use "form_div_layout.html.twig" %}
+
+{# Surcharge du checkbox Bootstrap (label(widget)) pour n'afficher que l'input #}
+{% block checkbox_widget -%}
+    {%- set attr = attr|merge({ class: (attr.class|default('') ~ ' form-check-input')|trim }) -%}
+    <input type="checkbox" {{ block('widget_attributes') }} />
+{%- endblock checkbox_widget %}
+
+{% block choice_widget_expanded %}
+    <div {{ block('widget_container_attributes') }}>
+        {% for child in form %}
+            <div class="form-check admin-role-picker__item">
+                {{- form_widget(child) -}}
+                <label class="form-check-label" for="{{ child.vars.id }}">{{ child.vars.label }}</label>
+            </div>
+        {% endfor %}
+    </div>
+{% endblock %}

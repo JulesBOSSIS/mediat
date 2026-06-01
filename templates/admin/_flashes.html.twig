@@ -1,0 +1,10 @@
+{% for type, messages in app.flashes %}
+    {% for message in messages %}
+        {% set alert_class = type == 'success' ? 'success' : type == 'error' ? 'danger' : type == 'warning' ? 'warning' : 'info' %}
+        {% set icon = type == 'success' ? 'check-circle' : type == 'error' ? 'exclamation-circle' : type == 'warning' ? 'exclamation-triangle' : 'info-circle' %}
+        <div class="alert alert-{{ alert_class }} alert-dismissible fade show admin-alert border-0 shadow-sm" role="alert">
+            <i class="bi bi-{{ icon }} me-2"></i>{{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+        </div>
+    {% endfor %}
+{% endfor %}

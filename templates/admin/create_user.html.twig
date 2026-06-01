@@ -1,0 +1,66 @@
+{% extends 'admin/admin_base.html.twig' %}
+{% import 'admin/_macros.html.twig' as admin_ui %}
+
+{% block title %}Créer un utilisateur - MediaT{% endblock %}
+
+{% block admin_toolbar %}
+    {{ admin_ui.back_bar(path('app_admin_list_users'), 'Liste des utilisateurs') }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="admin-page-title mb-2">
+            <i class="bi bi-person-plus text-primary me-2"></i>
+            Nouvel utilisateur
+        </h1>
+        <p class="admin-page-lead text-muted mb-4">Renseignez l'e-mail, le rôle et un mot de passe (14 caractères minimum).</p>
+
+        <div class="card admin-card border-0 shadow-sm">
+            <div class="card-body p-4">
+                {{ form_start(form) }}
+                    <div class="mb-3">
+                        {{ form_label(form.email) }}
+                        {{ form_widget(form.email, { attr: { class: 'form-control' } }) }}
+                        {{ form_errors(form.email) }}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.role) }}
+                        {{ form_widget(form.role, { attr: { class: 'form-select' } }) }}
+                        {{ form_errors(form.role) }}
+                        <div class="form-text mt-2">
+                            <strong>Utilisateur</strong> : consultation et recherche.
+                            <strong>Partenaire</strong> : accès élargi aux contenus.
+                            <strong>Administrateur</strong> : gestion complète de l'application.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <p class="mb-2 fw-semibold small text-muted text-uppercase">Mot de passe</p>
+                        {{ form_label(form.plainPassword.first) }}
+                        {{ form_widget(form.plainPassword.first, { attr: { class: 'form-control' } }) }}
+                        {{ form_errors(form.plainPassword.first) }}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.plainPassword.second) }}
+                        {{ form_widget(form.plainPassword.second, { attr: { class: 'form-control' } }) }}
+                        {{ form_errors(form.plainPassword.second) }}
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            Créer l'utilisateur
+                        </button>
+                        <a href="{{ path('app_admin_list_users') }}" class="btn btn-outline-secondary">
+                            Annuler
+                        </a>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

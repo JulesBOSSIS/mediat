@@ -1,0 +1,126 @@
+{% extends 'admin/admin_base.html.twig' %}
+{% import 'admin/_macros.html.twig' as admin_ui %}
+
+{% block title %}Éditer un document - Admin{% endblock %}
+
+{% block admin_toolbar %}
+    {{ admin_ui.back_bar(path('app_admin_list_documents'), 'Liste des documents') }}
+{% endblock %}
+
+{% block admin_content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <h1 class="admin-page-title mb-2">Modifier le document</h1>
+        <p class="admin-page-lead text-muted mb-4 text-break">{{ document.title }}</p>
+
+        {% if form_errors(form) %}
+            <div class="alert alert-danger border-0 shadow-sm">{{ form_errors(form) }}</div>
+        {% endif %}
+
+        <div class="card admin-card border-0 shadow-sm">
+            <div class="card-body p-4">
+                {{ form_start(form, {'attr': {'novalidate': true, 'enctype': 'multipart/form-data'}}) }}
+                    <div class="mb-3">
+                        {{ form_label(form.title) }}
+                        {{ form_widget(form.title, { attr: { class: 'form-control' } }) }}
+                        {% if form_errors(form.title) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.title) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.documentType) }}
+                        {{ form_widget(form.documentType, { attr: { class: 'form-select' } }) }}
+                        <small class="form-text text-muted d-block mt-2">Fichier ou lien externe.</small>
+                        {% if form_errors(form.documentType) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.documentType) }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if document.documentType == 'file' and document.path %}
+                        <div class="alert alert-light border small mb-3" role="status">
+                            <strong>Fichier actuel :</strong> {{ document.path|split('/')|last }}
+                            <div class="text-muted mt-1">Choisissez un nouveau fichier pour remplacer l'existant.</div>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3" id="file-section">
+                        {{ form_label(form.file) }}
+                        {{ form_widget(form.file, { attr: { class: 'form-control' } }) }}
+                        <small class="form-text text-muted d-block mt-2">{{ form_help(form.file) }}</small>
+                        {% if form_errors(form.file) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.file) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3" id="url-section" style="display: none;">
+                        {{ form_label(form.externalUrl) }}
+                        {{ form_widget(form.externalUrl, { attr: { class: 'form-control' } }) }}
+                        <small class="form-text text-muted d-block mt-2">{{ form_help(form.externalUrl) }}</small>
+                        {% if form_errors(form.externalUrl) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.externalUrl) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.folder) }}
+                        {{ form_widget(form.folder, { attr: { class: 'form-select' } }) }}
+                        {% if form_errors(form.folder) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.folder) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form_label(form.position) }}
+                        {{ form_widget(form.position, { attr: { class: 'form-control' } }) }}
+                        <small class="form-text text-muted d-block mt-2">{{ form_help(form.position) }}</small>
+                        {% if form_errors(form.position) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.position) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form_label(form.externalVideoUrl) }}
+                        {{ form_widget(form.externalVideoUrl, { attr: { class: 'form-control' } }) }}
+                        <small class="form-text text-muted d-block mt-2">{{ form_help(form.externalVideoUrl) }}</small>
+                        {% if form_errors(form.externalVideoUrl) %}
+                            <div class="text-danger small mt-1">{{ form_errors(form.externalVideoUrl) }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Enregistrer
+                        </button>
+                        <a href="{{ path('app_admin_list_documents') }}" class="btn btn-outline-secondary">
+                            Annuler
+                        </a>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateDocumentTypeFields() {
+        const documentType = document.querySelector('select[name="document_form_type[documentType]"]').value;
+        const fileSection = document.getElementById('file-section');
+        const urlSection = document.getElementById('url-section');
+
+        if (documentType === 'file') {
+            fileSection.style.display = 'block';
+            urlSection.style.display = 'none';
+        } else if (documentType === 'link') {
+            fileSection.style.display = 'none';
+            urlSection.style.display = 'block';
+        } else {
+            fileSection.style.display = 'block';
+            urlSection.style.display = 'none';
+        }
+    }
+
+    document.querySelector('select[name="document_form_type[documentType]"]').addEventListener('change', updateDocumentTypeFields);
+    document.addEventListener('DOMContentLoaded', updateDocumentTypeFields);
+</script>
+{% endblock %}

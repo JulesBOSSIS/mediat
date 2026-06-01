@@ -1,0 +1,557 @@
+{% extends 'admin/admin_base.html.twig' %}
+
+{% block title %}Guide d'Administration - MediaT{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .admin-guide .sticky-top { top: 5.5rem; z-index: 1020; }
+        .admin-guide code {
+            background-color: var(--bs-tertiary-bg);
+            padding: 0.15rem 0.35rem;
+            border-radius: 0.25rem;
+            font-size: 0.9em;
+        }
+        .admin-guide .accordion-button:not(.collapsed) {
+            background-color: rgba(24, 95, 141, 0.09);
+            color: #185f8d;
+        }
+        .admin-guide .guide-section h2 {
+            padding-top: 1.75rem;
+            margin-top: 2.5rem;
+            border-bottom: 1px solid var(--bs-border-color);
+            padding-bottom: 0.65rem;
+            font-size: 1.35rem;
+        }
+        .admin-guide .guide-section h4 { margin-top: 1.75rem; font-size: 1.05rem; }
+    </style>
+{% endblock %}
+
+{% block admin_toolbar %}
+<div class="admin-toolbar admin-toolbar--flush d-flex flex-wrap gap-2 mb-2">
+    <a href="{{ path('app_admin') }}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left-short"></i> Panneau d'administration
+    </a>
+</div>
+{% endblock %}
+
+{% block admin_content %}
+<div class="admin-guide">
+    <header class="mb-4 pb-3 border-bottom border-opacity-50">
+        <h1 class="admin-page-title mb-2">
+            <i class="bi bi-book text-primary me-2"></i>
+            Guide d'administration
+        </h1>
+        <p class="admin-page-lead text-muted mb-0">Utilisateurs, dossiers, documents et commentaires.</p>
+    </header>
+
+    <div class="row">
+        <!-- Table des matières -->
+        <div class="col-lg-3 mb-5 mb-lg-0">
+            <div class="card admin-card border-0 shadow-sm sticky-top">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-list-check me-2"></i>
+                        Sommaire
+                    </h5>
+                    <div class="list-group list-group-flush">
+                        <a href="#accès-admin" class="list-group-item list-group-item-action">
+                            <i class="bi bi-door-open me-2"></i>Accès Admin
+                        </a>
+                        <a href="#utilisateurs" class="list-group-item list-group-item-action">
+                            <i class="bi bi-people me-2"></i>Utilisateurs
+                        </a>
+                        <a href="#roles" class="list-group-item list-group-item-action">
+                            <i class="bi bi-key me-2"></i>Rôles &amp; Droits
+                        </a>
+                        <a href="#dossiers" class="list-group-item list-group-item-action">
+                            <i class="bi bi-folder me-2"></i>Dossiers
+                        </a>
+                        <a href="#documents" class="list-group-item list-group-item-action">
+                            <i class="bi bi-file-earmark me-2"></i>Documents
+                        </a>
+                        <a href="#commentaires" class="list-group-item list-group-item-action">
+                            <i class="bi bi-chat-dots me-2"></i>Commentaires
+                        </a>
+                        <a href="#faq" class="list-group-item list-group-item-action">
+                            <i class="bi bi-question-lg me-2"></i>FAQ
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu -->
+        <div class="col-lg-9 guide-section">
+            <!-- Section: Accès Admin -->
+            <section id="accès-admin" class="mb-5">
+                <h2>
+                    <i class="bi bi-door-open me-2 text-primary"></i>
+                    Le Panneau d'Administration
+                </h2>
+                <h4 class="mt-4">Qui peut accéder au panneau ?</h4>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Seuls les utilisateurs ayant le rôle <strong>ROLE_ADMIN</strong> peuvent accéder au panneau d'administration et à ce guide.
+                </div>
+
+                <h4 class="mt-4">Accès au panneau d'administration</h4>
+                <p>Une fois connecté en tant qu'administrateur, vous pouvez accéder au panneau via :</p>
+                <ul>
+                    <li>Le menu utilisateur en haut à droite → <strong>"Panneau d'administration"</strong></li>
+                    <li>Directement via l'URL : <code>/admin</code></li>
+                </ul>
+
+                <h4 class="mt-4">Vue d'ensemble du panneau</h4>
+                <p>Le panneau d'administration vous propose des accès rapides à :</p>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h5>👥 Gestion des Utilisateurs</h5>
+                        <ul>
+                            <li>Valider les inscriptions en attente</li>
+                            <li>Créer des utilisateurs manuellement</li>
+                            <li>Modifier les rôles et droits</li>
+                            <li>Supprimer des comptes</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>📁 Gestion du Contenu</h5>
+                        <ul>
+                            <li>Créer et organiser des dossiers</li>
+                            <li>Ajouter et modifier des documents</li>
+                            <li>Gérer les commentaires</li>
+                            <li>Configurer les droits d'accès</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section: Utilisateurs -->
+            <section id="utilisateurs" class="mb-5">
+                <h2>
+                    <i class="bi bi-people me-2 text-success"></i>
+                    Gestion des Utilisateurs
+                </h2>
+                <h4 class="mt-4">Accepter une demande de création de compte</h4>
+                <p>Lorsqu'un utilisateur demande à créer un compte, sa demande est mise en attente jusqu'à validation par un administrateur.</p>
+                
+                <strong>Étapes :</strong>
+                <ol>
+                    <li>Cliquez sur <strong>"Valider les inscriptions"</strong></li>
+                    <li>Vous verrez la liste des demandes en attente</li>
+                    <li>Pour chaque demande :
+                        <ul>
+                            <li><span class="badge bg-success">✅ Accepter</span> Crée un compte (rôle ROLE_USER)</li>
+                            <li><span class="badge bg-danger">❌ Rejeter</span> Refuse la demande</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h4 class="mt-4">Créer un utilisateur manuellement</h4>
+                <strong>Étapes :</strong>
+                <ol>
+                    <li>Cliquez sur <strong>"Créer un utilisateur"</strong></li>
+                    <li>Remplissez le formulaire :
+                        <ul>
+                            <li><strong>Email</strong> : Adresse email unique</li>
+                            <li><strong>Mot de passe</strong> : Mot de passe initial sécurisé</li>
+                            <li><strong>Rôle</strong> : Choisissez le niveau d'accès</li>
+                        </ul>
+                    </li>
+                    <li>Cliquez sur <strong>"Créer"</strong></li>
+                </ol>
+
+                <h4 class="mt-4">Modifier un utilisateur</h4>
+                <ol>
+                    <li>Allez dans <strong>"Gérer les utilisateurs"</strong></li>
+                    <li>Sélectionnez l'utilisateur à modifier</li>
+                    <li>Modifiez les informations (email, mot de passe, rôle)</li>
+                    <li>Cliquez sur <strong>"Modifier"</strong></li>
+                </ol>
+
+                <h4 class="mt-4">Supprimer un utilisateur</h4>
+                <ol>
+                    <li>Allez dans <strong>"Gérer les utilisateurs"</strong></li>
+                    <li>Sélectionnez l'utilisateur</li>
+                    <li>Cliquez sur <strong>"Supprimer"</strong></li>
+                    <li>Confirmez la suppression</li>
+                </ol>
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>⚠️ Attention :</strong> La suppression est définitive et ne peut pas être annulée.
+                </div>
+            </section>
+
+            <!-- Section: Rôles -->
+            <section id="roles" class="mb-5">
+                <h2>
+                    <i class="bi bi-key me-2 text-warning"></i>
+                    Système de Rôles et Droits
+                </h2>
+
+                <p>MediaT utilise un système de rôles pour contrôler les accès et les droits des utilisateurs.</p>
+
+                <div class="row mt-4">
+                    <!-- ROLE_USER -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <strong>ROLE_USER</strong><br>
+                                <small>Utilisateur Standard</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">Rôle par défaut pour les nouveaux utilisateurs.</p>
+                                <strong>Droits :</strong>
+                                <ul class="small">
+                                    <li><span class="badge bg-success">✅</span> Consulter les documents publics</li>
+                                    <li><span class="badge bg-success">✅</span> Commenter et noter</li>
+                                    <li><span class="badge bg-success">✅</span> Ajouter aux favoris</li>
+                                    <li><span class="badge bg-success">✅</span> Rechercher</li>
+                                    <li><span class="badge bg-danger">❌</span> Créer/modifier documents</li>
+                                    <li><span class="badge bg-danger">❌</span> Administration</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROLE_PARTNER -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 border-info">
+                            <div class="card-header bg-info text-white">
+                                <strong>ROLE_PARTNER</strong><br>
+                                <small>Accès partenaire</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">Accès étendu pour les partenaires.</p>
+                                <strong>Droits :</strong>
+                                <ul class="small">
+                                    <li><span class="badge bg-success">✅</span> Accès réservé partenaires</li>
+                                    <li><span class="badge bg-success">✅</span> Documents partenaires</li>
+                                    <li><span class="badge bg-success">✅</span> Tous les droits ROLE_USER</li>
+                                    <li><span class="badge bg-danger">❌</span> Créer/modifier documents</li>
+                                    <li><span class="badge bg-danger">❌</span> Administration</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ROLE_ADMIN -->
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <strong>ROLE_ADMIN</strong><br>
+                                <small>Administrateur</small>
+                            </div>
+                            <div class="card-body">
+                                <p class="card-text">Accès complet à tous les droits.</p>
+                                <strong>Droits :</strong>
+                                <ul class="small">
+                                    <li><span class="badge bg-success">✅</span> Admin complet</li>
+                                    <li><span class="badge bg-success">✅</span> Gérer utilisateurs</li>
+                                    <li><span class="badge bg-success">✅</span> Créer/supprimer docs</li>
+                                    <li><span class="badge bg-success">✅</span> Modérer commentaires</li>
+                                    <li><span class="badge bg-success">✅</span> Tous les droits</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info mt-4">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    <strong>Conseil :</strong> Limitez le nombre d'administrateurs pour la sécurité.
+                </div>
+            </section>
+
+            <!-- Section: Dossiers -->
+            <section id="dossiers" class="mb-5">
+                <h2>
+                    <i class="bi bi-folder me-2 text-info"></i>
+                    Gestion des Dossiers
+                </h2>
+
+                <p>Les dossiers permettent d'organiser les documents de manière hiérarchique.</p>
+
+                <h4 class="mt-4">Créer un dossier</h4>
+                <ol>
+                    <li>Cliquez sur <strong>"Créer un dossier"</strong></li>
+                    <li>Remplissez les informations :
+                        <ul>
+                            <li><strong>Nom</strong> : Nom du dossier affiché</li>
+                            <li><strong>Dossier parent</strong> : Optionnel pour la hiérarchie</li>
+                            <li><strong>Position</strong> : Ordre d'affichage</li>
+                            <li><strong>Rôles requis</strong> : Restrictions d'accès</li>
+                        </ul>
+                    </li>
+                    <li>Cliquez sur <strong>"Créer"</strong></li>
+                </ol>
+
+                <h4 class="mt-4">Organiser en arborescence</h4>
+                <p>Créez une structure hiérarchique :</p>
+                <div class="bg-light p-3 rounded">
+                    <code>
+                        📁 Documentation<br>
+                        ├── 📁 Guides utilisateur<br>
+                        │   ├── 📄 Installation<br>
+                        │   └── 📄 Configuration<br>
+                        └── 📁 FAQ
+                    </code>
+                </div>
+
+                <h4 class="mt-4">Définir les droits d'accès</h4>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Important :</strong> Un utilisateur doit être connecté pour accéder à n'importe quel contenu. Les droits définissent le niveau minimum requis.
+                </div>
+                <table class="table table-sm mt-3">
+                    <thead>
+                        <tr>
+                            <th>Configuration</th>
+                            <th>Visibilité</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ROLE_USER</strong></td>
+                            <td>Tous les utilisateurs connectés</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ROLE_PARTNER</strong></td>
+                            <td>Partenaires uniquement</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ROLE_ADMIN</strong></td>
+                            <td>Administrateurs uniquement</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="mt-4">Modifier/Supprimer un dossier</h4>
+                <ol>
+                    <li>Allez dans <strong>"Gérer les dossiers"</strong></li>
+                    <li>Sélectionnez le dossier</li>
+                    <li>Cliquez sur <strong>"Modifier"</strong> ou <strong>"Supprimer"</strong></li>
+                </ol>
+
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong>⚠️ Attention :</strong> La suppression d'un dossier supprime aussi ses sous-dossiers et documents.
+                </div>
+            </section>
+
+            <!-- Section: Documents -->
+            <section id="documents" class="mb-5">
+                <h2>
+                    <i class="bi bi-file-earmark me-2 text-secondary"></i>
+                    Gestion des Documents
+                </h2>
+
+                <p>Les documents sont les fichiers ou liens externes à partager via la plateforme.</p>
+
+                <h4 class="mt-4">Ajouter un document</h4>
+                <ol>
+                    <li>Cliquez sur <strong>"Ajouter un document"</strong></li>
+                    <li>Remplissez le formulaire :
+                        <ul>
+                            <li><strong>Titre</strong> : Nom du document</li>
+                            <li><strong>Type</strong> : Fichier ou Lien externe</li>
+                            <li><strong>Dossier</strong> : Sélectionnez le dossier parent</li>
+                            <li><strong>Fichier/URL</strong> : Téléchargez ou entrez l'adresse</li>
+                        </ul>
+                    </li>
+                    <li>Cliquez sur <strong>"Ajouter"</strong></li>
+                </ol>
+
+                <h4 class="mt-4">Types de documents supportés</h4>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h5>📄 Fichiers</h5>
+                        <ul>
+                            <li><strong>Documents :</strong> PDF</li>
+                            <li><strong>Images :</strong> JPG, PNG, GIF, WebP</li>
+                            <li><strong>Vidéos :</strong> MP4, WebM, OGV</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>🔗 Liens externes</h5>
+                        <ul>
+                            <li>URLs complètes (http:// ou https://)</li>
+                            <li>Ressources externes</li>
+                            <li>Partage de liens Web</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">Traitement automatique</h4>
+                <div class="alert alert-success">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Pour les PDFs : Le texte est automatiquement extrait pour améliorer la recherche.
+                </div>
+
+                <h4 class="mt-4">Modifier/Supprimer un document</h4>
+                <ol>
+                    <li>Allez dans <strong>"Gérer les documents"</strong></li>
+                    <li>Sélectionnez le document</li>
+                    <li>Cliquez sur <strong>"Modifier"</strong> ou <strong>"Supprimer"</strong></li>
+                </ol>
+            </section>
+
+            <!-- Section: Commentaires -->
+            <section id="commentaires" class="mb-5">
+                <h2>
+                    <i class="bi bi-chat-dots me-2 text-success"></i>
+                    Gestion des Commentaires
+                </h2>
+
+                <p>Les commentaires sont les messages que les utilisateurs laissent sur les documents.</p>
+
+                <h4 class="mt-4">Consulter les commentaires</h4>
+                <ol>
+                    <li>Cliquez sur <strong>"Gérer les commentaires"</strong></li>
+                    <li>Vous verrez la liste avec :
+                        <ul>
+                            <li>L'auteur (email)</li>
+                            <li>Le document commenté</li>
+                            <li>Le contenu du commentaire</li>
+                            <li>La date de publication</li>
+                        </ul>
+                    </li>
+                </ol>
+
+                <h4 class="mt-4">Modérer les commentaires</h4>
+                <ol>
+                    <li>Consultez la liste des commentaires</li>
+                    <li>Cliquez sur <strong>"Supprimer"</strong> pour retirer un commentaire inapproprié</li>
+                    <li>Confirmez la suppression</li>
+                </ol>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    La suppression est définitive et l'utilisateur n'en est pas averti automatiquement.
+                </div>
+            </section>
+
+            <!-- Section: FAQ -->
+            <section id="faq" class="mb-5">
+                <h2>
+                    <i class="bi bi-question-lg me-2 text-warning"></i>
+                    Questions Fréquemment Posées
+                </h2>
+
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                Comment ajouter un partenaire ?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Les partenaires sont gérés comme des utilisateurs avec le rôle <strong>ROLE_PARTNER</strong> :
+                                <ol>
+                                    <li>Créez un utilisateur ou acceptez sa demande d'inscription</li>
+                                    <li>Attribuez-lui le rôle <strong>ROLE_PARTNER</strong></li>
+                                    <li>Créez des dossiers/documents réservés au rôle partenaire</li>
+                                    <li>Configurez les droits d'accès appropriés</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                Puis-je changer les droits d'un utilisateur ?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Oui, vous pouvez modifier le rôle à tout moment :
+                                <ol>
+                                    <li>Allez dans "Gérer les utilisateurs"</li>
+                                    <li>Sélectionnez l'utilisateur</li>
+                                    <li>Modifiez le champ "Rôle"</li>
+                                    <li>Enregistrez les modifications</li>
+                                </ol>
+                                Les nouveaux droits s'appliqueront immédiatement.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                Comment réinitialiser un mot de passe ?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                <ol>
+                                    <li>Allez dans "Gérer les utilisateurs"</li>
+                                    <li>Sélectionnez l'utilisateur</li>
+                                    <li>Entrez un nouveau mot de passe</li>
+                                    <li>Enregistrez les modifications</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                Que se passe-t-il quand je supprime un dossier ?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                La suppression d'un dossier supprime également :
+                                <ul>
+                                    <li><span class="badge bg-success">✓</span> Tous les sous-dossiers contenus</li>
+                                    <li><span class="badge bg-success">✓</span> Tous les documents du dossier</li>
+                                    <li><span class="badge bg-secondary">✗</span> Les commentaires restent</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                Comment organiser au mieux mes dossiers ?
+                            </button>
+                        </h2>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                <strong>Bonnes pratiques :</strong>
+                                <ul>
+                                    <li>Créez une arborescence logique et intuitive</li>
+                                    <li>Limitez la profondeur à 3-4 niveaux</li>
+                                    <li>Utilisez des noms clairs et cohérents</li>
+                                    <li>Groupez par thème ou type</li>
+                                    <li>Utilisez les rôles pour les restrictions</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="mt-4">Besoin d'aide ?</h4>
+                <p>Pour toute question supplémentaire :</p>
+                <ul>
+                    <li>Contactez l'administrateur système du projet</li>
+                    <li>Consultez la documentation technique principale (README.md)</li>
+                    <li>Signalez les bugs à l'équipe de développement</li>
+                </ul>
+            </section>
+
+            <div class="alert alert-light border mt-5">
+                <small class="text-muted">
+                    <i class="bi bi-calendar-check me-1"></i>
+                    Dernière mise à jour : Décembre 2025
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
