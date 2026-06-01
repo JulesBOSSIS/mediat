@@ -179,7 +179,7 @@ class SecurityController extends AbstractController
         }
 
         $user = $demoUserService->getOrCreateDemoUser();
-        $security->login($user, 'main');
+        $security->login($user, 'form_login');
 
         $this->addFlash('info', 'Vous explorez MediaT en mode démonstration (même accès qu\'un utilisateur standard).');
 
