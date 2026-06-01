@@ -7,8 +7,9 @@ parameters:
     uploads_dir: '%kernel.project_dir%/public/uploads'
     videos_dir: '%kernel.project_dir%/public/uploads/videos'
     app.version: '1.3.0'
-    app.demo_mode: '%env(bool:default:0:APP_DEMO_MODE)%'
+    app.demo_mode_default: '0'
     app.demo_user_email_fallback: 'demo@mediat.demo'
+    app.demo_mode: '%env(bool:default:app.demo_mode_default:APP_DEMO_MODE)%'
     app.demo_user_email: '%env(default:app.demo_user_email_fallback:DEMO_USER_EMAIL)%'
 
 services:

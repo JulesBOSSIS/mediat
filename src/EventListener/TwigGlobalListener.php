@@ -30,8 +30,28 @@ class TwigGlobalListener implements EventSubscriberInterface
         ];
     }
 
+    private const PUBLIC_ROUTES_WITHOUT_SIDEBAR = [
+        'app_login',
+        'app_register',
+        'app_verify_code',
+        'app_forgot_password',
+        'app_reset_password',
+        'app_demo_login',
+    ];
+
     public function onKernelController(ControllerEvent $event): void
     {
+        if (!$event->isMainRequest()) {
+            return;
+        }
+
+        $route = $event->getRequest()->attributes->get('_route');
+        if (\is_string($route) && \in_array($route, self::PUBLIC_ROUTES_WITHOUT_SIDEBAR, true)) {
+            $this->setTwigGlobalsWithoutSidebar();
+
+            return;
+        }
+
         // Récupérer tous les dossiers racines
         $allRootFolders = $this->entityManager->getRepository(Folder::class)->findBy(
             ['parent' => null],
@@ -58,7 +78,18 @@ class TwigGlobalListener implements EventSubscriberInterface
             $unreadCommentReplyCount = $this->commentRepository->countUnreadReplyNotificationsForUser($user);
         }
         $this->twig->addGlobal('unread_comment_reply_count', $unreadCommentReplyCount);
+        $this->setDemoTwigGlobals($user);
+    }
 
+    private function setTwigGlobalsWithoutSidebar(): void
+    {
+        $this->twig->addGlobal('rootFolders', []);
+        $this->twig->addGlobal('unread_comment_reply_count', 0);
+        $this->setDemoTwigGlobals(null);
+    }
+
+    private function setDemoTwigGlobals(mixed $user): void
+    {
         $isDemoSession = $this->demoMode
             && $user instanceof User
             && $user->getEmail() === $this->demoUserEmail;

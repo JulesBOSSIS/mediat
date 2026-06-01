@@ -41,6 +41,9 @@ jobs:
       APP_SECRET: "00000000000000000000000000000000"
       # Chemin absolu SQLite (4e slash) — requis par Doctrine pour les fichiers hors cwd.
       DATABASE_URL: sqlite:////${{ github.workspace }}/var/ci.sqlite
+      APP_DEMO_MODE: "1"
+      DEMO_USER_EMAIL: demo@mediat.demo
+      MAILER_FROM: noreply@example.com
     steps:
       - uses: actions/checkout@v4
 

@@ -2,6 +2,8 @@
 
 Une plateforme de gestion de documentation basée sur **Symfony 7.4 (LTS)** avec authentification, gestion de dossiers et de documents.
 
+Disponible sur https://mediat.j-bossis--guyon.dev/
+
 ## Table des matières
 
 - [Installation](#installation)
