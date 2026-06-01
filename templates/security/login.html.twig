@@ -82,6 +82,39 @@
         font-size: 3rem;
         margin-bottom: 1rem;
     }
+
+    .btn-demo {
+        border-radius: 10px;
+        padding: 12px;
+        font-weight: 600;
+        border: 2px solid #6c757d;
+        transition: all 0.3s ease;
+    }
+
+    .btn-demo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(108, 117, 125, 0.35);
+        background-color: #f8f9fa;
+    }
+
+    .demo-divider {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 1.25rem 0;
+        color: #adb5bd;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .demo-divider::before,
+    .demo-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: #e9ecef;
+    }
 </style>
 {% endblock %}
 
@@ -168,6 +201,20 @@
                     Se connecter
                 </button>
             </form>
+
+            {% if demo_mode|default(false) and not app.user %}
+            <div class="demo-divider">ou</div>
+            <form method="post" action="{{ path('app_demo_login') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('demo_login') }}">
+                <button type="submit" class="btn btn-outline-secondary btn-demo w-100">
+                    <i class="bi bi-play-circle me-2"></i>
+                    Explorer en démo
+                </button>
+                <p class="text-muted small text-center mt-2 mb-0">
+                    Accès visiteur sans identifiants (même vue qu'un utilisateur standard).
+                </p>
+            </form>
+            {% endif %}
 
             {% if 'ROLE_ADMIN' in app.user.roles|default([]) %}
             <div class="register-link">

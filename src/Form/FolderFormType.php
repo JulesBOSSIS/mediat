@@ -3,17 +3,27 @@
 namespace App\Form;
 
 use App\Entity\Folder;
+use App\Entity\User;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Choice;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
 class FolderFormType extends AbstractType
 {
+    /** @var list<string> */
+    private const ACCESS_ROLE_CHOICES = [
+        User::ROLE_ADMIN,
+        User::ROLE_PARTNER,
+        User::ROLE_USER,
+        'ROLE_CTIA', // ancien nom (dossiers existants) — affiché comme Partenaire
+    ];
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -58,12 +68,23 @@ class FolderFormType extends AbstractType
                 'required' => false,
                 'multiple' => true,
                 'expanded' => true,
-                'choices' => [
-                    'Admin' => 'ROLE_ADMIN',
-                    'Partenaire' => 'ROLE_PARTNER',
-                    'Utilisateur' => 'ROLE_USER',
+                'choices' => self::ACCESS_ROLE_CHOICES,
+                'choice_label' => static fn (string $role): string => match ($role) {
+                    User::ROLE_ADMIN => 'Administrateur',
+                    User::ROLE_PARTNER, 'ROLE_CTIA' => 'Partenaire',
+                    User::ROLE_USER => 'Utilisateur',
+                    default => $role,
+                },
+                'choice_value' => static fn (?string $role): string => $role ?? '',
+                'invalid_message' => 'Le rôle « {{ value }} » n\'est pas valide.',
+                'help' => 'Laissez tout décoché pour rendre le dossier accessible à tous les comptes connectés. Cochez un ou plusieurs rôles pour restreindre l\'accès.',
+                'constraints' => [
+                    new Choice([
+                        'choices' => self::ACCESS_ROLE_CHOICES,
+                        'multiple' => true,
+                        'message' => 'Un ou plusieurs rôles sélectionnés ne sont pas valides.',
+                    ]),
                 ],
-                'help' => 'Sélectionnez les rôles autorisés à accéder à ce dossier (laissez vide pour public)',
             ])
         ;
     }

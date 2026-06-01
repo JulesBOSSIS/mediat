@@ -5,9 +5,12 @@ namespace App\Controller;
 use App\Form\ForgotPasswordFormType;
 use App\Form\ResetPasswordFormType;
 use App\Repository\UserRepository;
+use App\Service\DemoUserService;
 use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -127,8 +130,10 @@ class SecurityController extends AbstractController
     }
 
     #[Route(path: '/', name: 'app_login')]
-    public function login(AuthenticationUtils $authenticationUtils): Response
-    {
+    public function login(
+        AuthenticationUtils $authenticationUtils,
+        #[Autowire('%app.demo_mode%')] bool $demoMode,
+    ): Response {
         // Si l'utilisateur est déjà connecté, rediriger vers accueil
         if ($this->getUser()) {
             return $this->redirectToRoute('app_accueil');
@@ -150,7 +155,35 @@ class SecurityController extends AbstractController
             'last_username' => $lastUsername,
             'error' => $error,
             'error_message' => $errorMessage,
+            'demo_mode' => $demoMode,
         ]);
+    }
+
+    #[Route(path: '/demo/login', name: 'app_demo_login', methods: ['POST'])]
+    public function demoLogin(
+        Request $request,
+        Security $security,
+        DemoUserService $demoUserService,
+        #[Autowire('%app.demo_mode%')] bool $demoMode,
+    ): Response {
+        if (!$demoMode) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->isCsrfTokenValid('demo_login', $request->request->getString('_csrf_token'))) {
+            throw $this->createAccessDeniedException('Jeton de sécurité invalide.');
+        }
+
+        if ($this->getUser()) {
+            return $this->redirectToRoute('app_accueil');
+        }
+
+        $user = $demoUserService->getOrCreateDemoUser();
+        $security->login($user, 'main');
+
+        $this->addFlash('info', 'Vous explorez MediaT en mode démonstration (même accès qu\'un utilisateur standard).');
+
+        return $this->redirectToRoute('app_accueil');
     }
 
     #[Route(path: '/logout', name: 'app_logout')]

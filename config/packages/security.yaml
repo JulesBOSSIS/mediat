@@ -47,6 +47,7 @@ security:
         - { path: ^/api/verification-code, roles: PUBLIC_ACCESS }  # Route API sécurisée par clé API (authentification gérée dans le contrôleur)
         - { path: ^/forgot-password, roles: PUBLIC_ACCESS }  # Route de demande de réinitialisation accessible à tous
         - { path: ^/reset-password, roles: PUBLIC_ACCESS }  # Route de réinitialisation accessible à tous
+        - { path: ^/demo/login, roles: PUBLIC_ACCESS }  # Connexion démo (désactivée si APP_DEMO_MODE=0)
         - { path: ^/search, roles: ROLE_USER }          # Recherche uniquement pour utilisateurs connectés
         - { path: ^/accueil, roles: ROLE_USER }         # Accueil protégé pour les utilisateurs connectés
         - { path: ^/, roles: ROLE_USER }                # Toutes les autres pages protégées

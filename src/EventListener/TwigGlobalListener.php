@@ -19,6 +19,8 @@ class TwigGlobalListener implements EventSubscriberInterface
         private EntityManagerInterface $entityManager,
         private TokenStorageInterface $tokenStorage,
         private CommentRepository $commentRepository,
+        private bool $demoMode = false,
+        private string $demoUserEmail = '',
     ) {}
 
     public static function getSubscribedEvents(): array
@@ -56,5 +58,11 @@ class TwigGlobalListener implements EventSubscriberInterface
             $unreadCommentReplyCount = $this->commentRepository->countUnreadReplyNotificationsForUser($user);
         }
         $this->twig->addGlobal('unread_comment_reply_count', $unreadCommentReplyCount);
+
+        $isDemoSession = $this->demoMode
+            && $user instanceof User
+            && $user->getEmail() === $this->demoUserEmail;
+        $this->twig->addGlobal('demo_mode', $this->demoMode);
+        $this->twig->addGlobal('is_demo_session', $isDemoSession);
     }
 }

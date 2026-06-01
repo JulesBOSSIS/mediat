@@ -2,10 +2,15 @@
    On rend une case simple + libellé explicite (cohérent avec form-check Bootstrap). #}
 {% use "form_div_layout.html.twig" %}
 
-{# Surcharge du checkbox Bootstrap (label(widget)) pour n'afficher que l'input #}
+{# Surcharge du checkbox Bootstrap : label séparé dans choice_widget_expanded.
+   Il faut conserver value + checked (Symfony 7.4), sinon le navigateur envoie « on »
+   et ChoiceType répond « The selected choice is invalid. » #}
 {% block checkbox_widget -%}
     {%- set attr = attr|merge({ class: (attr.class|default('') ~ ' form-check-input')|trim }) -%}
-    <input type="checkbox" {{ block('widget_attributes') }} />
+    <input type="checkbox"
+           {{ block('widget_attributes') }}
+           value="{{ value }}"
+           {% if checked %}checked="checked"{% endif %}/>
 {%- endblock checkbox_widget %}
 
 {% block choice_widget_expanded %}

@@ -141,7 +141,10 @@ class Folder
 
         // Vérifier si l'utilisateur a au moins un des rôles requis
         foreach ($this->requiredRoles as $requiredRole) {
-            if (in_array($requiredRole, $user->getRoles())) {
+            if ($requiredRole === 'ROLE_CTIA') {
+                $requiredRole = 'ROLE_PARTNER';
+            }
+            if (in_array($requiredRole, $user->getRoles(), true)) {
                 return true;
             }
         }
