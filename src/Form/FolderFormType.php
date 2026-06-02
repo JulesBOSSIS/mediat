@@ -21,7 +21,6 @@ class FolderFormType extends AbstractType
         User::ROLE_ADMIN,
         User::ROLE_PARTNER,
         User::ROLE_USER,
-        'ROLE_CTIA', // ancien nom (dossiers existants) — affiché comme Partenaire
     ];
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -71,7 +70,7 @@ class FolderFormType extends AbstractType
                 'choices' => self::ACCESS_ROLE_CHOICES,
                 'choice_label' => static fn (string $role): string => match ($role) {
                     User::ROLE_ADMIN => 'Administrateur',
-                    User::ROLE_PARTNER, 'ROLE_CTIA' => 'Partenaire',
+                    User::ROLE_PARTNER => 'Partenaire',
                     User::ROLE_USER => 'Utilisateur',
                     default => $role,
                 },
